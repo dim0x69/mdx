@@ -1,0 +1,6 @@
+{
+    "go.delveConfig": {
+      "showGlobalVariables": true,
+    }
+  }
+  
