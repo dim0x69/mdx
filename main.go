@@ -27,6 +27,8 @@ type LauncherBlock struct {
 	extension string // The file extension for the language
 }
 
+// global storage for launchers
+// the key is the infostring from the code fence
 var launchers = map[string]LauncherBlock{}
 
 func isExecutableInPath(candidates []string) string {
@@ -43,6 +45,12 @@ func loadLaunchers() {
 
 	if cmd := isExecutableInPath([]string{"sh"}); cmd != "" {
 		launchers["sh"] = LauncherBlock{cmd: cmd, extension: "sh"}
+		launchers["bash"] = LauncherBlock{cmd: cmd, extension: "sh"}
+		addedLaunchers = append(addedLaunchers, cmd)
+	}
+
+	if cmd := isExecutableInPath([]string{"bash"}); cmd != "" {
+		launchers["bash"] = LauncherBlock{cmd: cmd, extension: "bash"}
 		addedLaunchers = append(addedLaunchers, cmd)
 	}
 

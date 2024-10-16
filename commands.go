@@ -22,11 +22,6 @@ func executeCommand(commandName string, args ...string) error {
 		return fmt.Errorf("command not found: %s", commandName)
 	}
 
-	launcher, ok := launchers[commandBlock.Lang]
-	if !ok {
-		return fmt.Errorf("launcher not found for language: %s", commandBlock.Lang)
-	}
-
 	// Create a map for the template arguments
 	argMap := make(map[string]string)
 	for i, arg := range args {
@@ -68,13 +63,29 @@ func executeCommand(commandName string, args ...string) error {
 		return fmt.Errorf("failed to execute template: %v", err)
 	}
 
+	launcher, ok := launchers[commandBlock.Lang]
+	if !ok {
+		return fmt.Errorf("launcher not found for language: %s", commandBlock.Lang)
+	}
+
 	// Write the rendered code to the temporary file
 	tmpFile, err := os.CreateTemp("", fmt.Sprintf("mdx-*.%s", launcher.extension))
 	if err != nil {
 		return fmt.Errorf("failed to create temporary file: %v", err)
 	}
+	// Set the permissions of the temporary file to 755
+	if err := os.Chmod(tmpFile.Name(), 0755); err != nil {
+		return fmt.Errorf("failed to set permissions on temporary file: %v", err)
+	}
+
 	defer os.Remove(tmpFile.Name())
 
+	if !commandBlock.Config["shebang"].(bool) {
+		if _, err := tmpFile.Write([]byte(fmt.Sprintf("#!/usr/bin/env %s\n", launcher.cmd))); err != nil {
+			return fmt.Errorf("failed to write to temporary file: %v", err)
+		}
+
+	}
 	if _, err := tmpFile.Write(renderedCode.Bytes()); err != nil {
 		return fmt.Errorf("failed to write to temporary file: %v", err)
 	}
@@ -82,11 +93,16 @@ func executeCommand(commandName string, args ...string) error {
 		return fmt.Errorf("failed to close temporary file: %v", err)
 	}
 
-	cmd := exec.Command(launcher.cmd, tmpFile.Name())
+	cmd := exec.Command(tmpFile.Name())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
+		content, readErr := os.ReadFile(tmpFile.Name())
+		if readErr != nil {
+			return fmt.Errorf("failed to execute command: %v, and failed to read temporary file: %v", err, readErr)
+		}
+		fmt.Printf("Content of tmpFile:\n%s\n", content)
 		return fmt.Errorf("failed to execute command: %v", err)
 	}
 
@@ -155,12 +171,8 @@ func loadCommands(markdownFile string) error {
 				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentHeadingCommand, markdownFile))
 			}
 
-			// ignore code blocks for languages which have only a infostring, but the language is not defined
-			if lang != "" && !code_shebang {
-				if _, launcherExists := launchers[lang]; !launcherExists {
-					logrus.Debug(fmt.Sprintf("No launcher defined for language: '%s'. Ignoring command '%s' in '%s'.", lang, currentHeadingCommand, markdownFile))
-					return ast.WalkContinue, nil
-				}
+			if code_shebang {
+				lang = "sh"
 			}
 
 			if currentHeadingCommand != "" {
