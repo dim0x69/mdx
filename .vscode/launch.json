@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["${input:markdownfile}","${input:command}"],
+            "args": ["${input:markdownfile}","${input:command}", "${input:arg}"],
             "envFile": "${workspaceFolder}/.env"
         }
     ],
@@ -26,6 +26,12 @@
             "type": "promptString",
             "description": "Command name",
             "default": "cmd1"
+          },
+          {
+            "id": "arg",
+            "type": "promptString",
+            "description": "arg for command",
+            "default": ""
           }
   
         ]
