@@ -12,11 +12,11 @@ import (
 
 // CommandBlock represents a parsed command block
 type CommandBlock struct {
-	Lang     string            // the infostring from the code fence
-	Code     string            // the content of the code fence
-	Args     []string          // placeholder for the future
-	Filename string            // the filename of the markdown file
-	Config   map[string]string // placeholder for the future
+	Lang     string         // the infostring from the code fence
+	Code     string         // the content of the code fence
+	Args     []string       // placeholder for the future
+	Filename string         // the filename of the markdown file
+	Config   map[string]any // placeholder for the future
 }
 
 // Global store for parsed commands

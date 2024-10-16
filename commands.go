@@ -171,16 +171,11 @@ func loadCommands(markdownFile string) error {
 					Lang:     lang,
 					Code:     code,
 					Filename: markdownFile,
-					Config:   make(map[string]string),
+					Config:   make(map[string]any),
 				}
 
-				// Check for shebang
-				if len(code) >= 2 && code[:2] == "#!" {
-					commandBlock.Config["shebang"] = "true"
-				}
-
+				commandBlock.Config["shebang"] = code_shebang
 				commands[currentHeadingCommand] = commandBlock
-
 				foundCodeBlock = true
 				logrus.Debug(fmt.Sprintf("Found code block. Infostring: '%s', Command: '%s'", lang, currentHeadingCommand))
 			}
