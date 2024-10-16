@@ -70,7 +70,10 @@ func setLogLevel() {
     }
 }
 
-
+func errorExit(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, args...)
+	os.Exit(1)
+}
 
 func main() {
 	setLogLevel()
@@ -87,8 +90,7 @@ func main() {
         //     return
 		default:
 			if flag.NArg() < 2 {
-				fmt.Printf("Usage: mdx <markdown-file> [command] [args]")
-				return
+				errorExit("Usage: mdx <markdown-file> [command] [args]")
 			}
 			// Assume the first argument is a markdown file
             markdownFile := subcommand
@@ -98,7 +100,7 @@ func main() {
             // Load the commands from the markdown file into the global structure
             err := loadCommands(markdownFile)
 			if err != nil {
-                fmt.Print(err)
+                errorExit("Error loading commands from %s: %v", markdownFile, err)
             }
 
 			// Test whether command is in commands
@@ -106,10 +108,10 @@ func main() {
 				// Execute the command
 				err := executeCommand(command_name)
 				if err != nil {
-					fmt.Printf("Error executing command: %v", err)
+					errorExit("Error executing command: %v", err)
 				}
 			}else {
-				fmt.Printf("Command not found in %s: %s", markdownFile, command_name, )
+				errorExit("Command not found in %s: %s", markdownFile, command_name, )
 			}
 			return
         }
