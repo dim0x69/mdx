@@ -13,10 +13,9 @@ Imagine you have the following Markdown  file to document your commands:
 With `mdx` you execute the `sh` code block:
 
 ```
-$ mdx simple_echo hello world
-$ hello world
+% ./mdx simple_echo hello world
+hello world
 ```
-
 
 ## Resources
 The idea for this project came from [Makedown](https://github.com/tzador/makedown).
