@@ -10,6 +10,15 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
+            "args": ["${input:command}", "${input:arg}"],
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Launch with specific md file",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
             "args": ["${input:markdownfile}","${input:command}", "${input:arg}"],
             "envFile": "${workspaceFolder}/.env"
         }

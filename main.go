@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
 
 // CommandBlock represents a parsed command block
 type CommandBlock struct {
-	Lang   string            // the infostring from the code fence
-	Code   string            // the content of the code fence
-	Args   []string          // placeholder for the future
-	Config map[string]string // placeholder for the future
+	Lang     string            // the infostring from the code fence
+	Code     string            // the content of the code fence
+	Args     []string          // placeholder for the future
+	Filename string            // the filename of the markdown file
+	Config   map[string]string // placeholder for the future
 }
 
 // Global store for parsed commands
@@ -77,48 +79,57 @@ func errorExit(format string, args ...interface{}) {
 
 func main() {
 	setLogLevel()
+
 	// Define command-line flags
-	// listAllCommandsFlag := flag.Bool("all", false, "List all commands, even if extension is not installed")
+	fileFlag := flag.String("file", "", "Specify a markdown file")
 	flag.Parse()
+
 	logrus.Debug("MDX started with parameters:", os.Args)
+
 	// Check for subcommands
-	if flag.NArg() > 0 {
-		subcommand := flag.Arg(0)
-		switch subcommand {
-		// case "list":
-		//     listCommands(*listAllCommandsFlag)
-		//     return
-		default:
-			if flag.NArg() < 2 {
-				errorExit("Usage: mdx <markdown-file> [command] [args]")
-			}
-			// Assume the first argument is a markdown file
-			markdownFile := subcommand
-			command_name := flag.Arg(1)
-			command_args := []string{}
-			if flag.NArg() > 2 {
-				command_args = flag.Args()[2:]
-			}
+	if flag.NArg() < 1 {
+		errorExit("Usage: mdx [-file <markdown-file>] <command> [args]")
+	}
 
-			loadLaunchers()
-			// Load the commands from the markdown file into the global structure
-			err := loadCommands(markdownFile)
+	commandName := flag.Arg(0)
+	commandArgs := []string{}
+	if flag.NArg() > 1 {
+		commandArgs = flag.Args()[1:]
+	}
+
+	loadLaunchers()
+
+	// Load commands from the specified markdown file or all markdown files in the current directory
+	if *fileFlag != "" {
+		err := loadCommands(*fileFlag)
+		if err != nil {
+			errorExit("Error loading commands from %s: %v", *fileFlag, err)
+		}
+	} else {
+		mdFiles, err := filepath.Glob("*.md")
+		if err != nil {
+			errorExit("Error searching for markdown files: %v", err)
+		}
+		if len(mdFiles) == 0 {
+			errorExit("No markdown files found in the current directory")
+		}
+		for _, mdFile := range mdFiles {
+			logrus.Debug(fmt.Sprintf("Loading file %s", mdFile))
+			err := loadCommands(mdFile)
 			if err != nil {
-				errorExit("Error loading commands from %s: %v", markdownFile, err)
+				errorExit("Error loading commands from %s: %v", mdFile, err)
 			}
-
-			// Test whether command is in commands
-			if _, ok := commands[command_name]; ok {
-				// Execute the command
-				err := executeCommand(command_name, command_args...)
-				if err != nil {
-					errorExit("Error executing command: %v", err)
-				}
-			} else {
-				errorExit("Command not found in %s: %s", markdownFile, command_name)
-			}
-			return
 		}
 	}
-	fmt.Print("Usage: mdx <markdown-file> [command] [args] or mdx list [-all]")
+
+	// Test whether command is in commands
+	if _, ok := commands[commandName]; ok {
+		// Execute the command
+		err := executeCommand(commandName, commandArgs...)
+		if err != nil {
+			errorExit("Error executing command: %v", err)
+		}
+	} else {
+		errorExit("Command not found: %s", commandName)
+	}
 }

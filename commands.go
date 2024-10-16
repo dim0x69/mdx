@@ -105,32 +105,41 @@ func loadCommands(markdownFile string) error {
 
 	var currentHeadingCommand string
 	var foundCodeBlock bool
+	var currentHeading string
 
 	return ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if heading, ok := n.(*ast.Heading); ok && entering {
 			if heading.Level >= 2 {
-				inlineCode := extractInlineCodeFromHeading(heading, source)
-				if inlineCode == "" {
-					return ast.WalkStop, fmt.Errorf("no inline code found in heading: %s", string(heading.Text(source)))
-				}
-				currentHeadingCommand = inlineCode
-				logrus.Debug("Found heading with inline code:", currentHeadingCommand)
+				currentHeading = string(heading.Text(source))
+				currentHeadingCommand = extractInlineCodeFromHeading(heading, source)
+				logrus.Debug(fmt.Sprintf("Found heading: '%s' and command: '%s'", currentHeading, currentHeadingCommand))
 				foundCodeBlock = false
 			}
 		}
 
 		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && !foundCodeBlock {
+			if currentHeading == "" {
+				return ast.WalkStop, fmt.Errorf("no heading found for code block in file: '%s'", markdownFile)
+			}
+			if currentHeadingCommand == "" {
+				return ast.WalkStop, fmt.Errorf("no inline code found in heading: %s", currentHeading)
+			}
 			if currentHeadingCommand != "" {
+				if _, exists := commands[currentHeadingCommand]; exists {
+					return ast.WalkStop, fmt.Errorf("duplicate command found: '%s' in file '%s'", currentHeadingCommand, markdownFile)
+				}
+
 				lang := string(block.Language(source))
 				code := string(block.Text(source))
 
 				commands[currentHeadingCommand] = CommandBlock{
-					Lang:   lang,
-					Code:   code,
-					Config: make(map[string]string),
+					Lang:     lang,
+					Code:     code,
+					Filename: markdownFile,
+					Config:   make(map[string]string),
 				}
 				foundCodeBlock = true
-				logrus.Debug(fmt.Sprintf("Found code block. Infostring: %s, Heading: %s", lang, currentHeadingCommand))
+				logrus.Debug(fmt.Sprintf("Found code block. Infostring: '%s', Command: '%s'", lang, currentHeadingCommand))
 			}
 		}
 		return ast.WalkContinue, nil
