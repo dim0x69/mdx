@@ -19,7 +19,7 @@
             "id": "markdownfile",
             "type": "promptString",
             "description": "The Markdown file",
-            "default": "markdown.md"
+            "default": "demo.md"
           },
           {
             "id": "command",
