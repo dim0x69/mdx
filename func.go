@@ -177,6 +177,7 @@ func loadCommands(markdownFile string) error {
 
 	var currentHeadingCommand string
 	var foundCodeBlock bool
+	var foundHeading bool
 	var currentHeading string
 
 	return ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -186,10 +187,12 @@ func loadCommands(markdownFile string) error {
 				currentHeadingCommand = extractInlineCodeFromHeading(heading, source)
 				logrus.Debug(fmt.Sprintf("Found heading: '%s' and command: '%s'", currentHeading, currentHeadingCommand))
 				foundCodeBlock = false
+				foundHeading = true
+
 			}
 		}
 
-		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && !foundCodeBlock {
+		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && !foundCodeBlock && foundHeading {
 
 			lang := string(block.Language(source))
 			code := string(block.Text(source))
