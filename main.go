@@ -65,6 +65,7 @@ func main() {
 			}else {
 				log.Fatalf("Command not found in %s: %s", markdownFile, command_name, )
 			}
+			return
         }
     }
 	log.Fatal("Usage: mdx <markdown-file> [command] [args] or mdx list [-all]")
