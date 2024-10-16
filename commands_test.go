@@ -29,6 +29,12 @@ func TestParse2(t *testing.T) {
 	commands = map[string]CommandBlock{}
 
 	err := loadCommands("tests/test2.md")
+	if len(commands) != 1 {
+		t.Fatalf("expected 1 command, got %d", len(commands))
+	}
+	if commands["simple_echo"].Lang != "" {
+		t.Fatalf("expected lang to be empty, got %s", commands["simple_echo"].Lang)
+	}
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
