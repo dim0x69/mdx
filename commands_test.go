@@ -24,3 +24,17 @@ func TestParse1(t *testing.T) {
 	}
 
 }
+
+func TestParse2(t *testing.T) {
+	commands = map[string]CommandBlock{}
+
+	err := loadCommands("tests/test2.md")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if !commands["simple_echo"].Config["shebang"].(bool) {
+		t.Fatalf("expected shebang to be true")
+	}
+
+}

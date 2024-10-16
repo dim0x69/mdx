@@ -227,10 +227,6 @@ func loadCommands(markdownFile string) error {
 				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentHeadingCommand, markdownFile))
 			}
 
-			if code_shebang {
-				lang = "sh"
-			}
-
 			if currentHeadingCommand != "" {
 				if _, exists := commands[currentHeadingCommand]; exists {
 					return ast.WalkStop, fmt.Errorf("duplicate command found: '%s' was already defined in '%s'", currentHeadingCommand, commands[currentHeadingCommand].Filename)
