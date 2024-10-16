@@ -118,6 +118,23 @@ func loadCommands(markdownFile string) error {
 		}
 
 		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && !foundCodeBlock {
+
+			lang := string(block.Language(source))
+			code := string(block.Text(source))
+
+			// ignore code blocks which have no infostring
+			if lang == "" {
+				logrus.Debug("No language defined for code block. Ignoring code block for command")
+				return ast.WalkContinue, nil
+			}
+
+			// ignore code blocks for languages which have no launcher defined
+			if lang != "" {
+				if _, launcherExists := launchers[lang]; !launcherExists {
+					logrus.Debug(fmt.Sprintf("No launcher defined for language: '%s'. Ignoring code block for command", lang))
+					return ast.WalkContinue, nil
+				}
+			}
 			if currentHeading == "" {
 				return ast.WalkStop, fmt.Errorf("no heading found for code block in file: '%s'", markdownFile)
 			}
@@ -128,9 +145,6 @@ func loadCommands(markdownFile string) error {
 				if _, exists := commands[currentHeadingCommand]; exists {
 					return ast.WalkStop, fmt.Errorf("duplicate command found: '%s' in file '%s'", currentHeadingCommand, markdownFile)
 				}
-
-				lang := string(block.Language(source))
-				code := string(block.Text(source))
 
 				commands[currentHeadingCommand] = CommandBlock{
 					Lang:     lang,
