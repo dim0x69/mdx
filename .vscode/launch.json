@@ -10,7 +10,8 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["${input:markdownfile}","${input:command}"]
+            "args": ["${input:markdownfile}","${input:command}"],
+            "envFile": "${workspaceFolder}/.env"
         }
     ],
     "inputs": [
