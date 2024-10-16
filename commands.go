@@ -122,36 +122,65 @@ func loadCommands(markdownFile string) error {
 			lang := string(block.Language(source))
 			code := string(block.Text(source))
 
-			// ignore code blocks which have no infostring
-			if lang == "" {
-				logrus.Debug("No language defined for code block. Ignoring code block for command")
-				return ast.WalkContinue, nil
+			code_shebang := false
+			// Check for shebang
+			if len(code) >= 2 && code[:2] == "#!" {
+				code_shebang = true
 			}
 
-			// ignore code blocks for languages which have no launcher defined
-			if lang != "" {
+			// ignore code blocks for languages which have neither infostring nor shebang defined.
+			// Notify the user
+			if lang == "" && !code_shebang {
 				if _, launcherExists := launchers[lang]; !launcherExists {
-					logrus.Debug(fmt.Sprintf("No launcher defined for language: '%s'. Ignoring code block for command", lang))
+					logrus.Debug(fmt.Sprintf("no launcher defined for infostring: '%s'. Ignoring command '%s' in '%s'", lang, currentHeadingCommand, markdownFile))
 					return ast.WalkContinue, nil
 				}
 			}
+
 			if currentHeading == "" {
 				return ast.WalkStop, fmt.Errorf("no heading found for code block in file: '%s'", markdownFile)
 			}
 			if currentHeadingCommand == "" {
 				return ast.WalkStop, fmt.Errorf("no inline code found in heading: %s", currentHeading)
 			}
+
+			// ignore code blocks which have no infostring and no shebang
+			if lang == "" && !code_shebang {
+				logrus.Debug(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'. Ignoring command.", currentHeadingCommand, markdownFile))
+				return ast.WalkContinue, nil
+			}
+
+			// notify the user if both language and shebang are defined
+			if lang != "" && code_shebang {
+				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentHeadingCommand, markdownFile))
+			}
+
+			// ignore code blocks for languages which have only a infostring, but the language is not defined
+			if lang != "" && !code_shebang {
+				if _, launcherExists := launchers[lang]; !launcherExists {
+					logrus.Debug(fmt.Sprintf("No launcher defined for language: '%s'. Ignoring command '%s' in '%s'.", lang, currentHeadingCommand, markdownFile))
+					return ast.WalkContinue, nil
+				}
+			}
+
 			if currentHeadingCommand != "" {
 				if _, exists := commands[currentHeadingCommand]; exists {
-					return ast.WalkStop, fmt.Errorf("duplicate command found: '%s' in file '%s'", currentHeadingCommand, markdownFile)
+					return ast.WalkStop, fmt.Errorf("duplicate command found: '%s' was already defined in '%s'", currentHeadingCommand, commands[currentHeadingCommand].Filename)
 				}
-
-				commands[currentHeadingCommand] = CommandBlock{
+				commandBlock := CommandBlock{
 					Lang:     lang,
 					Code:     code,
 					Filename: markdownFile,
 					Config:   make(map[string]string),
 				}
+
+				// Check for shebang
+				if len(code) >= 2 && code[:2] == "#!" {
+					commandBlock.Config["shebang"] = "true"
+				}
+
+				commands[currentHeadingCommand] = commandBlock
+
 				foundCodeBlock = true
 				logrus.Debug(fmt.Sprintf("Found code block. Infostring: '%s', Command: '%s'", lang, currentHeadingCommand))
 			}
