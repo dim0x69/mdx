@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/sirupsen/logrus"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
@@ -28,7 +29,7 @@ func executeCommand(commandName string) error {
     if err != nil {
         return fmt.Errorf("failed to create temporary file: %v", err)
     }
-    defer os.Remove(tmpFile.Name()) // Clean up the file afterwards
+    defer os.Remove(tmpFile.Name())
 
     if _, err := tmpFile.Write([]byte(commandBlock.Code)); err != nil {
         return fmt.Errorf("failed to write to temporary file: %v", err)
@@ -65,6 +66,7 @@ func loadCommands(markdownFile string) error {
         if heading, ok := n.(*ast.Heading); ok && entering {
             if heading.Level <= 2 {
                 currentHeading = string(heading.Text(source))
+                logrus.Debug("Found heading:", currentHeading)
                 foundCodeBlock = false
             }
         }
@@ -80,6 +82,7 @@ func loadCommands(markdownFile string) error {
                     Config: make(map[string]string),
                 }
                 foundCodeBlock = true
+                logrus.Debug(fmt.Sprintf("Found code block. Infostring: %s, Heading: %s",lang, currentHeading))
             }
         }
         return ast.WalkContinue, nil

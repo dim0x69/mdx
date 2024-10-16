@@ -2,7 +2,11 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
+	"os"
+	"os/exec"
+
+	"github.com/sirupsen/logrus"
 )
 
 // CommandBlock represents a parsed command block
@@ -23,15 +27,57 @@ type LauncherBlock struct {
 }
 var launchers = map[string]LauncherBlock{}
 
-func loadLaunchers(){
-	launchers["sh"] = LauncherBlock{cmd: "sh", extension: "sh"}
+func isExecutableInPath(candidates []string) string {
+    for _, cmd := range candidates {
+        if _, err := exec.LookPath(cmd); err == nil {
+            return cmd
+        }
+    }
+    return ""
 }
 
+func loadLaunchers() {
+    addedLaunchers := []string{}
+
+    if cmd := isExecutableInPath([]string{"sh"}); cmd != "" {
+        launchers["sh"] = LauncherBlock{cmd: cmd, extension: "sh"}
+        addedLaunchers = append(addedLaunchers, cmd)
+    }
+
+    pythonCandidates := []string{"python", "python3"}
+    if cmd := isExecutableInPath(pythonCandidates); cmd != "" {
+        launchers["python"] = LauncherBlock{cmd: cmd, extension: "py"}
+        addedLaunchers = append(addedLaunchers, cmd)
+    }
+    
+	// Add more binaries as needed
+
+    // Print added launchers
+    logrus.Debug("Added launchers:", addedLaunchers)
+}
+
+func setLogLevel() {
+    logLevel := os.Getenv("MDX_LOG_LEVEL")
+    switch logLevel {
+    case "DEBUG":
+        logrus.SetLevel(logrus.DebugLevel)
+    case "INFO":
+        logrus.SetLevel(logrus.InfoLevel)
+    case "ERROR":
+        logrus.SetLevel(logrus.ErrorLevel)
+    default:
+        logrus.SetLevel(logrus.WarnLevel)
+    }
+}
+
+
+
 func main() {
+	setLogLevel()
     // Define command-line flags
     // listAllCommandsFlag := flag.Bool("all", false, "List all commands, even if extension is not installed")
 	flag.Parse()
-
+	logrus.Debug("MDX started with parameters:", os.Args)
     // Check for subcommands
     if flag.NArg() > 0 {
         subcommand := flag.Arg(0)
@@ -41,7 +87,7 @@ func main() {
         //     return
 		default:
 			if flag.NArg() < 2 {
-				log.Fatal("Usage: mdx <markdown-file> [command] [args]")
+				fmt.Printf("Usage: mdx <markdown-file> [command] [args]")
 				return
 			}
 			// Assume the first argument is a markdown file
@@ -52,7 +98,7 @@ func main() {
             // Load the commands from the markdown file into the global structure
             err := loadCommands(markdownFile)
 			if err != nil {
-                log.Fatal(err)
+                fmt.Print(err)
             }
 
 			// Test whether command is in commands
@@ -60,13 +106,13 @@ func main() {
 				// Execute the command
 				err := executeCommand(command_name)
 				if err != nil {
-					log.Fatalf("Error executing command: %v", err)
+					fmt.Printf("Error executing command: %v", err)
 				}
 			}else {
-				log.Fatalf("Command not found in %s: %s", markdownFile, command_name, )
+				fmt.Printf("Command not found in %s: %s", markdownFile, command_name, )
 			}
 			return
         }
     }
-	log.Fatal("Usage: mdx <markdown-file> [command] [args] or mdx list [-all]")
+	fmt.Print("Usage: mdx <markdown-file> [command] [args] or mdx list [-all]")
 }
