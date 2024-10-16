@@ -1,4 +1,4 @@
-module mdx/main
+module mdx
 
 go 1.23.2
 

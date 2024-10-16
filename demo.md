@@ -12,9 +12,6 @@ Output:
 $ hello world
 ```
 
-
-
-
 ## `shebang1`- Example using shebang from a python venv
 
 ```
@@ -24,4 +21,4 @@ import sys
 print(sys.executable)
 ```
 
-Note: No infostring is specified.
+Note: No infostring is specified. You can also specify a infostring, the shebang will nontheless be preferrred.
