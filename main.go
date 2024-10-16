@@ -53,7 +53,7 @@ func loadLaunchers() {
 	// Add more binaries as needed
 
 	// Print added launchers
-	logrus.Debug("Added launchers:", addedLaunchers)
+	logrus.Debug("Added launchers: ", addedLaunchers)
 }
 
 func setLogLevel() {

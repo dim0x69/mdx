@@ -103,33 +103,45 @@ func loadCommands(markdownFile string) error {
 	reader := text.NewReader(source)
 	doc := md.Parser().Parse(reader)
 
-	var currentHeading string
+	var currentHeadingCommand string
 	var foundCodeBlock bool
 
-	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	return ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if heading, ok := n.(*ast.Heading); ok && entering {
-			if heading.Level <= 2 {
-				currentHeading = string(heading.Text(source))
-				logrus.Debug("Found heading:", currentHeading)
+			if heading.Level >= 2 {
+				inlineCode := extractInlineCodeFromHeading(heading, source)
+				if inlineCode == "" {
+					return ast.WalkStop, fmt.Errorf("no inline code found in heading: %s", string(heading.Text(source)))
+				}
+				currentHeadingCommand = inlineCode
+				logrus.Debug("Found heading with inline code:", currentHeadingCommand)
 				foundCodeBlock = false
 			}
 		}
 
 		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && !foundCodeBlock {
-			if currentHeading != "" {
+			if currentHeadingCommand != "" {
 				lang := string(block.Language(source))
 				code := string(block.Text(source))
 
-				commands[currentHeading] = CommandBlock{
+				commands[currentHeadingCommand] = CommandBlock{
 					Lang:   lang,
 					Code:   code,
 					Config: make(map[string]string),
 				}
 				foundCodeBlock = true
-				logrus.Debug(fmt.Sprintf("Found code block. Infostring: %s, Heading: %s", lang, currentHeading))
+				logrus.Debug(fmt.Sprintf("Found code block. Infostring: %s, Heading: %s", lang, currentHeadingCommand))
 			}
 		}
 		return ast.WalkContinue, nil
 	})
-	return nil
+}
+
+func extractInlineCodeFromHeading(heading *ast.Heading, source []byte) string {
+	for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
+		if codeSpan, ok := child.(*ast.CodeSpan); ok {
+			return string(codeSpan.Text(source))
+		}
+	}
+	return ""
 }
