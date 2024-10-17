@@ -29,7 +29,7 @@ type CommandBlock struct {
 	Code     string         // the content of the code fence
 	Args     []string       // placeholder for the future
 	Filename string         // the filename of the markdown file
-	Config   map[string]any // placeholder for the future
+	Meta     map[string]any // placeholder for the future
 }
 
 // Global store for parsed commands
@@ -64,9 +64,6 @@ func loadLaunchers() {
 		addedLaunchers = append(addedLaunchers, cmd)
 	}
 
-	// Add more binaries as needed
-
-	// Print added launchers
 	logrus.Debug("Added launchers: ", addedLaunchers)
 }
 
@@ -136,7 +133,7 @@ func executeCommand(commandName string, args ...string) error {
 
 	defer os.Remove(tmpFile.Name())
 
-	if !commandBlock.Config["shebang"].(bool) {
+	if !commandBlock.Meta["shebang"].(bool) {
 		if _, err := tmpFile.Write([]byte(fmt.Sprintf("#!/usr/bin/env %s\n", launcher.cmd))); err != nil {
 			return fmt.Errorf("failed to write to temporary file: %v", err)
 		}
@@ -243,10 +240,10 @@ func loadCommands(markdownFile string) error {
 					Lang:     lang,
 					Code:     code,
 					Filename: markdownFile,
-					Config:   make(map[string]any),
+					Meta:     make(map[string]any),
 				}
 
-				commandBlock.Config["shebang"] = code_shebang
+				commandBlock.Meta["shebang"] = code_shebang
 				commands[currentHeadingCommand] = commandBlock
 				logrus.Debug(fmt.Sprintf("Found code block. Infostring: '%s', Command: '%s'", lang, currentHeadingCommand))
 			}

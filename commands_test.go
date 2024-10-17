@@ -39,7 +39,7 @@ func TestParse2(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	if !commands["simple_echo"].Config["shebang"].(bool) {
+	if !commands["simple_echo"].Meta["shebang"].(bool) {
 		t.Fatalf("expected shebang to be true")
 	}
 
