@@ -1,9 +1,15 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
 )
 
 func TestParse1(t *testing.T) {
@@ -50,4 +56,21 @@ func TestParse2(t *testing.T) {
 		t.Fatalf("expected shebang to be true")
 	}
 
+}
+
+func TestWalkMarkdownTree(t *testing.T) {
+	source, err := os.ReadFile("tests/test1.md")
+	if err != nil {
+		return
+	}
+	md := goldmark.New()
+	reader := text.NewReader(source)
+	doc := md.Parser().Parse(reader)
+
+	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if entering {
+			fmt.Printf("Node type: %T\n", n)
+		}
+		return ast.WalkContinue, nil
+	})
 }

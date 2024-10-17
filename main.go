@@ -50,7 +50,8 @@ func main() {
 
 	loadLaunchers()
 
-	// Load commands from the specified markdown file or all markdown files in the current directory
+	// Load commands from the specified markdown file or
+	// all markdown files in the current directory
 	if *fileFlag != "" {
 		err := loadCommands(*fileFlag)
 		if err != nil {
@@ -73,9 +74,8 @@ func main() {
 		}
 	}
 
-	// Test whether command is in commands
+	// execute command
 	if _, ok := commands[commandName]; ok {
-		// Execute the command
 		err := executeCommand(commandName, commandArgs...)
 		if err != nil {
 			errorExit("Error executing command: %v", err)
