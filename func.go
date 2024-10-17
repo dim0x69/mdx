@@ -166,6 +166,18 @@ func executeCommand(commandName string, args ...string) error {
 }
 
 func loadCommands(markdownFile string) error {
+	/*
+		The search strategy is as follows. We start at the beginning of the document, parse the Markdown file into an AST and walk the tree:
+
+		1 We search for a heading. (findHeadingWalker)
+		2 If we find a heading, we call the findCodeBlocksWalker with the NextSibling of the Heading.
+		  findCodeBlocksWalker which extracts the commands from all code blocks below this heading.
+		  findCodeBlocksWalker runs until it reaches the next heading.
+		3 Goto 1.
+	*/
+
+	// TODO: load all commands
+
 	source, err := os.ReadFile(markdownFile)
 	if err != nil {
 		return err
@@ -176,23 +188,16 @@ func loadCommands(markdownFile string) error {
 	doc := md.Parser().Parse(reader)
 
 	var currentHeadingCommand string
-	var foundCodeBlock bool
-	var foundHeading bool
 	var currentHeading string
 
-	return ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if heading, ok := n.(*ast.Heading); ok && entering {
-			if heading.Level >= 2 {
-				currentHeading = string(heading.Text(source))
-				currentHeadingCommand = extractInlineCodeFromHeading(heading, source)
-				logrus.Debug(fmt.Sprintf("Found heading: '%s' and command: '%s'", currentHeading, currentHeadingCommand))
-				foundCodeBlock = false
-				foundHeading = true
+	findCodeBlocksWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 
-			}
+		if _, ok := n.(*ast.Heading); ok && !entering {
+			return ast.WalkStop, nil
 		}
 
-		if block, ok := n.(*ast.FencedCodeBlock); ok && entering && !foundCodeBlock && foundHeading {
+		// check if the node is a code block
+		if block, ok := n.(*ast.FencedCodeBlock); ok && entering {
 
 			lang := string(block.Language(source))
 			code := string(block.Text(source))
@@ -243,12 +248,26 @@ func loadCommands(markdownFile string) error {
 
 				commandBlock.Config["shebang"] = code_shebang
 				commands[currentHeadingCommand] = commandBlock
-				foundCodeBlock = true
 				logrus.Debug(fmt.Sprintf("Found code block. Infostring: '%s', Command: '%s'", lang, currentHeadingCommand))
 			}
 		}
 		return ast.WalkContinue, nil
-	})
+	}
+
+	findHeadingWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if heading, ok := n.(*ast.Heading); ok && entering {
+			currentHeading = string(heading.Text(source))
+			currentHeadingCommand = extractInlineCodeFromHeading(heading, source)
+			logrus.Debug(fmt.Sprintf("Found heading: '%s' and command: '%s'", currentHeading, currentHeadingCommand))
+			err = ast.Walk(heading.NextSibling(), findCodeBlocksWalker)
+			if err != nil {
+				return ast.WalkStop, nil
+			}
+		}
+		return ast.WalkContinue, nil
+	}
+
+	return ast.Walk(doc, findHeadingWalker)
 }
 
 func extractInlineCodeFromHeading(heading *ast.Heading, source []byte) string {
