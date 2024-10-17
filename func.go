@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/sirupsen/logrus"
@@ -25,11 +26,11 @@ func isExecutableInPath(candidates []string) string {
 
 // CommandBlock represents a parsed command block
 type CommandBlock struct {
-	Lang     string         // the infostring from the code fence
-	Code     string         // the content of the code fence
-	Args     []string       // placeholder for the future
-	Filename string         // the filename of the markdown file
-	Meta     map[string]any // placeholder for the future
+	Lang         string         // the infostring from the code fence
+	Code         string         // the content of the code fence
+	Dependencies []string       // to execute before this command
+	Filename     string         // the filename of the markdown file
+	Meta         map[string]any // placeholder for the future
 }
 
 // Global store for parsed commands
@@ -184,8 +185,8 @@ func loadCommands(markdownFile string) error {
 	reader := text.NewReader(source)
 	doc := md.Parser().Parse(reader)
 
-	var currentHeadingCommand string
-	var currentHeading string
+	var currentCommandName string
+	var currentCommandDeps []string
 
 	findCodeBlocksWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 
@@ -193,7 +194,6 @@ func loadCommands(markdownFile string) error {
 			return ast.WalkStop, nil
 		}
 
-		// check if the node is a code block
 		if block, ok := n.(*ast.FencedCodeBlock); ok && entering {
 
 			lang := string(block.Language(source))
@@ -209,53 +209,53 @@ func loadCommands(markdownFile string) error {
 			// Notify the user
 			if lang == "" && !code_shebang {
 				if _, launcherExists := launchers[lang]; !launcherExists {
-					logrus.Debug(fmt.Sprintf("no launcher defined for infostring: '%s'. Ignoring command '%s' in '%s'", lang, currentHeadingCommand, markdownFile))
+					logrus.Debug(fmt.Sprintf("no launcher defined for infostring: '%s'. Ignoring command '%s' in '%s'", lang, currentCommandName, markdownFile))
 					return ast.WalkContinue, nil
 				}
 			}
 
-			if currentHeading == "" {
-				return ast.WalkStop, fmt.Errorf("no heading found for code block in file: '%s'", markdownFile)
-			}
-			if currentHeadingCommand == "" {
-				return ast.WalkStop, fmt.Errorf("no inline code found in heading: %s", currentHeading)
-			}
-
 			// ignore code blocks which have no infostring and no shebang
 			if lang == "" && !code_shebang {
-				logrus.Debug(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'. Ignoring command.", currentHeadingCommand, markdownFile))
+				logrus.Debug(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'. Ignoring command.", currentCommandName, markdownFile))
 				return ast.WalkContinue, nil
 			}
 
 			// notify the user if both language and shebang are defined
 			if lang != "" && code_shebang {
-				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentHeadingCommand, markdownFile))
+				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentCommandName, markdownFile))
 			}
 
-			if currentHeadingCommand != "" {
-				if _, exists := commands[currentHeadingCommand]; exists {
-					return ast.WalkStop, fmt.Errorf("duplicate command found: '%s' was already defined in '%s'", currentHeadingCommand, commands[currentHeadingCommand].Filename)
-				}
-				commandBlock := CommandBlock{
-					Lang:     lang,
-					Code:     code,
-					Filename: markdownFile,
-					Meta:     make(map[string]any),
-				}
-
-				commandBlock.Meta["shebang"] = code_shebang
-				commands[currentHeadingCommand] = commandBlock
-				logrus.Debug(fmt.Sprintf("Found code block. Infostring: '%s', Command: '%s'", lang, currentHeadingCommand))
+			commandBlock := CommandBlock{
+				Lang:         lang,
+				Code:         code,
+				Dependencies: currentCommandDeps,
+				Filename:     markdownFile,
+				Meta:         make(map[string]any),
 			}
+
+			commandBlock.Meta["shebang"] = code_shebang
+			commands[currentCommandName] = commandBlock
+			logrus.Debug(fmt.Sprintf("Wrote code block. Infostring: '%s', Command: '%s'", lang, currentCommandName))
 		}
+
 		return ast.WalkContinue, nil
 	}
 
 	findHeadingWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if heading, ok := n.(*ast.Heading); ok && entering {
-			currentHeading = string(heading.Text(source))
-			currentHeadingCommand = extractInlineCodeFromHeading(heading, source)
-			logrus.Debug(fmt.Sprintf("Found heading: '%s' and command: '%s'", currentHeading, currentHeadingCommand))
+			commandName, dependencies := extractCommandAndDepsFromHeading(string(heading.Text(source)))
+			if commandName == "" {
+				logrus.Debug(fmt.Sprintf("No command found in heading: '%s'. Skipping.", string(heading.Text(source))))
+				return ast.WalkContinue, nil
+			}
+			currentCommandName = commandName
+			currentCommandDeps = dependencies
+
+			if _, exists := commands[currentCommandName]; exists {
+				return ast.WalkStop, fmt.Errorf("duplicate command found: '%s' was already defined in '%s'", currentCommandName, commands[currentCommandName].Filename)
+			}
+
+			logrus.Debug(fmt.Sprintf("Found heading: '%s' with command: '%s' and dependencies: %v", string(heading.Text(source)), currentCommandName, currentCommandDeps))
 			err = ast.Walk(heading.NextSibling(), findCodeBlocksWalker)
 			if err != nil {
 				return ast.WalkStop, nil
@@ -267,11 +267,23 @@ func loadCommands(markdownFile string) error {
 	return ast.Walk(doc, findHeadingWalker)
 }
 
-func extractInlineCodeFromHeading(heading *ast.Heading, source []byte) string {
-	for child := heading.FirstChild(); child != nil; child = child.NextSibling() {
-		if codeSpan, ok := child.(*ast.CodeSpan); ok {
-			return string(codeSpan.Text(source))
-		}
+// extractCommandAndDepsFromHeading extracts the command name and dependencies from the given heading and source.
+// The command name is extracted from the link text and the dependencies are extracted from the link destination.
+// [commandName](dep1 dep2 dep3) => commandName, [dep1, dep2, dep3]
+func extractCommandAndDepsFromHeading(heading string) (string, []string) {
+
+	// NOTE: goldmark does not support parsing links inside of a heading.
+	// We have to use a regular expression to extract the command name and dependencies.
+
+	re := regexp.MustCompile(`\[\s*(.*?)\s*\]\s*\((.*?)\)`)
+	matches := re.FindStringSubmatch(heading)
+	if len(matches) < 3 {
+		return "", nil
 	}
-	return ""
+
+	commandName := strings.TrimSpace(matches[1])
+	depsString := strings.TrimSpace(matches[2])
+	deps := strings.Fields(depsString)
+
+	return commandName, deps
 }

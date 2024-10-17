@@ -1,4 +1,4 @@
-## `simple_echo` - Simple echo in shell
+## [simple_echo](dep1 dep2) - Simple echo in shell
 
 ```sh
 echo "{{.arg1}} {{.arg2}}"

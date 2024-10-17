@@ -1,6 +1,7 @@
 package main
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -21,6 +22,12 @@ func TestParse1(t *testing.T) {
 	}
 	if strings.TrimSpace(commands["simple_echo"].Code) != "echo \"{{.arg1}} {{.arg2}}\"" {
 		t.Fatalf("expected code echo hello, got \"%s\"", commands["simple_echo"].Code)
+	}
+	if len(commands["simple_echo"].Dependencies) != 2 {
+		t.Fatalf("expected 2 dependencies, got %d", len(commands["simple_echo"].Dependencies))
+	}
+	if !reflect.DeepEqual(commands["simple_echo"].Dependencies, []string{"dep1", "dep2"}) {
+		t.Fatalf("expected dependencies to be equal")
 	}
 
 }
