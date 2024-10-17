@@ -39,7 +39,7 @@ func main() {
 
 	// Check for subcommands
 	if flag.NArg() < 1 {
-		errorExit("Usage: mdx [-file <markdown-file>] <command> [args]")
+		errorExit("Usage: mdx [-file <markdown-file>] <command> [args]\n")
 	}
 
 	commandName := flag.Arg(0)

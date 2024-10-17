@@ -267,9 +267,12 @@ func loadCommands(markdownFile string) error {
 	return ast.Walk(doc, findHeadingWalker)
 }
 
-// extractCommandAndDepsFromHeading extracts the command name and dependencies from the given heading and source.
-// The command name is extracted from the link text and the dependencies are extracted from the link destination.
-// [commandName](dep1 dep2 dep3) => commandName, [dep1, dep2, dep3]
+/*
+extractCommandAndDepsFromHeading extracts the command name and dependencies from the given heading and source.
+The command name is extracted from the link text and the dependencies are extracted from the link destination.
+
+[commandName](dep1 dep2 dep3) => commandName, [dep1, dep2, dep3]
+*/
 func extractCommandAndDepsFromHeading(heading string) (string, []string) {
 
 	// NOTE: goldmark does not support parsing links inside of a heading.
