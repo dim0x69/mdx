@@ -69,7 +69,7 @@ func executeCommand(commandName string, args ...string) error {
 
 	commandBlock, ok := commands[commandName]
 	if !ok {
-		return fmt.Errorf("command not found: %s", commandName)
+		return fmt.Errorf("%w: %s", ErrNoCommandFoundCommands, commandName)
 	}
 
 	// Create a map for the template arguments
@@ -90,14 +90,14 @@ func executeCommand(commandName string, args ...string) error {
 	for i := range args {
 		argKey := fmt.Sprintf("%d", i+1)
 		if _, ok := placeholderSet[argKey]; !ok {
-			return fmt.Errorf("argument %d (\"%s\") is provided but not used in the template", i+1, args[i])
+			return fmt.Errorf("%w: argument: %d (\"%s\")", ErrArgProvidedButNotUsed, i+1, args[i])
 		}
 	}
 
 	for placeholder := range placeholderSet {
 		argIndex := fmt.Sprintf("arg%s", placeholder)
 		if _, ok := argMap[argIndex]; !ok {
-			return fmt.Errorf("{{.arg%s}} is used in command \"%s\" but not provided in args", placeholder, commandName)
+			return fmt.Errorf("%w: {{.arg%s}}, command \"%s\"", ErrArgUsedInTemplateNotProvided, placeholder, commandName)
 		}
 	}
 
@@ -115,7 +115,7 @@ func executeCommand(commandName string, args ...string) error {
 
 	launcher, ok := launchers[commandBlock.Lang]
 	if !ok {
-		return fmt.Errorf("launcher not found for language: %s", commandBlock.Lang)
+		return fmt.Errorf("%w: %s", ErrNoLauncherDefined, commandBlock.Lang)
 	}
 
 	// Write the rendered code to the temporary file
