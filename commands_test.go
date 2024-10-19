@@ -1,76 +1,79 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/text"
 )
 
-func TestParse1(t *testing.T) {
-	commands = map[string]CommandBlock{}
-
-	loadCommands("tests/test1.md")
-	if len(commands) != 1 {
-		t.Fatalf("expected 1 command, got %d", len(commands))
-	}
-	if _, ok := commands["simple_echo"]; !ok {
-		t.Fatalf("expected command simple_echo to be present")
-	}
-	// test if the command is parsed correctly
-	if commands["simple_echo"].Lang != "sh" {
-		t.Fatalf("expected lang sh, got %s", commands["simple_echo"].Lang)
-	}
-	if strings.TrimSpace(commands["simple_echo"].Code) != "echo \"{{.arg1}} {{.arg2}}\"" {
-		t.Fatalf("expected code echo hello, got \"%s\"", commands["simple_echo"].Code)
-	}
-	if len(commands["simple_echo"].Dependencies) != 2 {
-		t.Fatalf("expected 2 dependencies, got %d", len(commands["simple_echo"].Dependencies))
-	}
-	if !reflect.DeepEqual(commands["simple_echo"].Dependencies, []string{"dep1", "dep2"}) {
-		t.Fatalf("expected dependencies to be equal")
-	}
-
-}
-
-func TestParse2(t *testing.T) {
-	commands = map[string]CommandBlock{}
-
-	err := loadCommands("tests/test2.md")
-	if len(commands) != 1 {
-		t.Fatalf("expected 1 command, got %d", len(commands))
-	}
-	if commands["simple_echo"].Lang != "" {
-		t.Fatalf("expected lang to be empty, got %s", commands["simple_echo"].Lang)
-	}
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+func TestParseGeneric(t *testing.T) {
+	tests := []struct {
+		filePath     string
+		expectedCmds map[string]CommandBlock
+		expectedErr  error
+	}{
+		{
+			filePath: "tests/test1.md",
+			expectedCmds: map[string]CommandBlock{
+				"simple_echo": {
+					Lang:         "sh",
+					Code:         "echo \"{{.arg1}} {{.arg2}}\"",
+					Dependencies: []string{"dep1", "dep2"},
+					Meta:         map[string]interface{}{"shebang": false},
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			filePath: "tests/test2.md",
+			expectedCmds: map[string]CommandBlock{
+				"simple_echo": {
+					Lang:         "",
+					Code:         "#!/my/python\nprint(blubb)",
+					Dependencies: []string{},
+					Meta:         map[string]interface{}{"shebang": true},
+				},
+			},
+			expectedErr: nil,
+		},
 	}
 
-	if !commands["simple_echo"].Meta["shebang"].(bool) {
-		t.Fatalf("expected shebang to be true")
+	for _, tt := range tests {
+		t.Run(tt.filePath, func(t *testing.T) {
+			commands = map[string]CommandBlock{}
+			err := loadCommands(tt.filePath)
+
+			if (err != nil || tt.expectedErr != nil) && !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("expected error %v, got %v", tt.expectedErr, err)
+			}
+
+			if len(commands) != len(tt.expectedCmds) {
+				t.Fatalf("expected %d commands, got %d", len(tt.expectedCmds), len(commands))
+			}
+
+			for name, expectedCmd := range tt.expectedCmds {
+				actualCmd, ok := commands[name]
+				if !ok {
+					t.Fatalf("expected command %s to be present", name)
+				}
+
+				if actualCmd.Lang != expectedCmd.Lang {
+					t.Fatalf("expected lang %s, got %s", expectedCmd.Lang, actualCmd.Lang)
+				}
+
+				if strings.TrimSpace(actualCmd.Code) != strings.TrimSpace(expectedCmd.Code) {
+					t.Fatalf("expected code %s, got %s", expectedCmd.Code, actualCmd.Code)
+				}
+
+				if !reflect.DeepEqual(actualCmd.Dependencies, expectedCmd.Dependencies) {
+					t.Fatalf("expected dependencies %v, got %v", expectedCmd.Dependencies, actualCmd.Dependencies)
+				}
+
+				if !reflect.DeepEqual(actualCmd.Meta, expectedCmd.Meta) {
+					t.Fatalf("expected meta %v, got %v", expectedCmd.Meta, actualCmd.Meta)
+				}
+			}
+		})
 	}
-
-}
-
-func TestWalkMarkdownTree(t *testing.T) {
-	source, err := os.ReadFile("tests/test1.md")
-	if err != nil {
-		return
-	}
-	md := goldmark.New()
-	reader := text.NewReader(source)
-	doc := md.Parser().Parse(reader)
-
-	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if entering {
-			fmt.Printf("Node type: %T\n", n)
-		}
-		return ast.WalkContinue, nil
-	})
 }
