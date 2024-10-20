@@ -146,18 +146,15 @@ func loadCommands(markdownFile string) error {
 				return ast.WalkContinue, nil
 			}
 			code_shebang := false
-			// Check for shebang
 			if len(code) >= 2 && code[:2] == "#!" {
 				code_shebang = true
 			}
 
-			// return an error for code blocks which have no infostring and no shebang
 			if lang == "" && !code_shebang {
 				logrus.Warn(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'.", currentCommandName, markdownFile))
 				return ast.WalkStop, ErrNoInfostringOrShebang
 			}
 
-			// notify the user if both language and shebang are defined
 			if lang != "" && code_shebang {
 				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentCommandName, markdownFile))
 			}
