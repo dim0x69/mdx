@@ -141,6 +141,10 @@ func loadCommands(markdownFile string) error {
 			lang := string(block.Language(source))
 			code := string(block.Text(source))
 
+			if code == "" {
+				logrus.Warn(fmt.Sprintf("Empty code block found for command '%s' in '%s'.", currentCommandName, markdownFile))
+				return ast.WalkContinue, nil
+			}
 			code_shebang := false
 			// Check for shebang
 			if len(code) >= 2 && code[:2] == "#!" {

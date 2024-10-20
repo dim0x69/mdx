@@ -127,3 +127,13 @@ func TestNoShebangNoInfostringDefined(t *testing.T) {
 	RunFileParseTest(t, test)
 
 }
+
+func TestNoCodeInCodeFence(t *testing.T) {
+	test := &FileParseTest{
+		filePath:     "tests/no_code_in_codefence.md",
+		expectedCmds: nil,
+		expectedErr:  nil,
+	}
+	RunFileParseTest(t, test)
+
+}
