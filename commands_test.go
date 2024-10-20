@@ -36,12 +36,19 @@ func RunFileParseTest(t *testing.T, tt *FileParseTest) {
 				t.Fatalf("expected command %s to be present", name)
 			}
 
-			if actualCmd.Lang != expectedCmd.Lang {
-				t.Fatalf("expected lang %s, got %s", expectedCmd.Lang, actualCmd.Lang)
-			}
+			for i, expectedCodeBlock := range expectedCmd.CodeBlocks {
+				actualCodeBlock := actualCmd.CodeBlocks[i]
+				if actualCodeBlock.Lang != expectedCodeBlock.Lang {
+					t.Fatalf("expected lang %s, got %s", expectedCodeBlock.Lang, actualCodeBlock.Lang)
+				}
 
-			if strings.TrimSpace(actualCmd.Code) != strings.TrimSpace(expectedCmd.Code) {
-				t.Fatalf("expected code %s, got %s", expectedCmd.Code, actualCmd.Code)
+				if strings.TrimSpace(actualCodeBlock.Code) != strings.TrimSpace(expectedCodeBlock.Code) {
+					t.Fatalf("expected code %s, got %s", expectedCodeBlock.Code, actualCodeBlock.Code)
+				}
+
+				if !reflect.DeepEqual(actualCodeBlock.Meta, expectedCodeBlock.Meta) {
+					t.Fatalf("expected meta %v, got %v", expectedCodeBlock.Meta, actualCodeBlock.Meta)
+				}
 			}
 
 			if !reflect.DeepEqual(actualCmd.Dependencies, expectedCmd.Dependencies) {
@@ -60,8 +67,10 @@ func TestOneCommandWithDeps(t *testing.T) {
 		filePath: "tests/test1.md",
 		expectedCmds: map[string]CommandBlock{
 			"simple_echo": {
-				Lang:         "sh",
-				Code:         "echo \"{{.arg1}} {{.arg2}}\"",
+				CodeBlocks: []CodeBlock{{
+					Lang: "sh",
+					Code: "echo \"{{.arg1}} {{.arg2}}\"",
+				}},
 				Dependencies: []string{"dep1", "dep2"},
 				Meta:         map[string]interface{}{"shebang": false},
 			},
@@ -76,14 +85,18 @@ func TestTwoCommands(t *testing.T) {
 		filePath: "tests/two_commands.md",
 		expectedCmds: map[string]CommandBlock{
 			"simple_echo1": {
-				Lang:         "sh",
-				Code:         "code1",
+				CodeBlocks: []CodeBlock{{
+					Lang: "sh",
+					Code: "code1",
+				}},
 				Dependencies: []string{"dep1"},
 				Meta:         map[string]interface{}{"shebang": false},
 			},
 			"simple_echo2": {
-				Lang:         "sh",
-				Code:         "code2",
+				CodeBlocks: []CodeBlock{{
+					Lang: "sh",
+					Code: "code2",
+				}},
 				Dependencies: []string{"dep1", "dep2"},
 				Meta:         map[string]interface{}{"shebang": false},
 			},
@@ -98,8 +111,10 @@ func TestParseShebang(t *testing.T) {
 		filePath: "tests/test2.md",
 		expectedCmds: map[string]CommandBlock{
 			"simple_echo": {
-				Lang:         "",
-				Code:         "#!/my/python\nprint(blubb)",
+				CodeBlocks: []CodeBlock{{
+					Lang: "",
+					Code: "#!/my/python\nprint(blubb)",
+				}},
 				Dependencies: []string{},
 				Meta:         map[string]interface{}{"shebang": true},
 			},

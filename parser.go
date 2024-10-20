@@ -124,8 +124,7 @@ func loadCommands(markdownFile string) error {
 	reader := text.NewReader(source)
 	doc := md.Parser().Parse(reader)
 
-	var currentCommandName string
-	var currentCommandDeps []string
+	var currentCommandBlock CommandBlock
 
 	findCodeBlocksWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 
@@ -142,7 +141,7 @@ func loadCommands(markdownFile string) error {
 			code := string(block.Text(source))
 
 			if code == "" {
-				logrus.Warn(fmt.Sprintf("Empty code block found for command '%s' in '%s'.", currentCommandName, markdownFile))
+				logrus.Warn(fmt.Sprintf("Empty code block found for command '%s' in '%s'.", currentCommandBlock.Name, markdownFile))
 				return ast.WalkContinue, nil
 			}
 			code_shebang := false
@@ -151,25 +150,23 @@ func loadCommands(markdownFile string) error {
 			}
 
 			if lang == "" && !code_shebang {
-				logrus.Warn(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'.", currentCommandName, markdownFile))
+				logrus.Warn(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'.", currentCommandBlock.Name, markdownFile))
 				return ast.WalkStop, ErrNoInfostringOrShebang
 			}
 
 			if lang != "" && code_shebang {
-				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentCommandName, markdownFile))
+				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentCommandBlock.Name, markdownFile))
 			}
 
-			commandBlock := CommandBlock{
-				Lang:         lang,
-				Code:         code,
-				Dependencies: currentCommandDeps,
-				Filename:     markdownFile,
-				Meta:         make(map[string]any),
+			codeBlock := CodeBlock{
+				Lang: lang,
+				Code: code,
+				Meta: make(map[string]any),
 			}
+			codeBlock.Meta["shebang"] = code_shebang
 
-			commandBlock.Meta["shebang"] = code_shebang
-			commands[currentCommandName] = commandBlock
-			logrus.Debug(fmt.Sprintf("Wrote code block. Infostring: '%s', Command: '%s'", lang, currentCommandName))
+			currentCommandBlock.CodeBlocks = append(currentCommandBlock.CodeBlocks, codeBlock)
+			logrus.Debug(fmt.Sprintf("Wrote new code block. Infostring: '%s', Command: '%s'", lang, currentCommandBlock.Name))
 		}
 
 		return ast.WalkContinue, nil
@@ -177,17 +174,32 @@ func loadCommands(markdownFile string) error {
 
 	findHeadingWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if heading, ok := n.(*MdxHeading); ok && entering {
-			currentCommandName = heading.commandName
-			currentCommandDeps = heading.deps
+			currentCommandBlock = CommandBlock{}
+			currentCommandBlock.Filename = markdownFile
+			currentCommandBlock.Meta = make(map[string]any)
+			currentCommandBlock.CodeBlocks = []CodeBlock{}
+			currentCommandBlock.Name = heading.commandName
+			currentCommandBlock.Dependencies = heading.deps
 
-			if _, exists := commands[currentCommandName]; exists {
-				return ast.WalkStop, fmt.Errorf("%w: '%s' was already defined in '%s'", ErrDuplicateCommand, currentCommandName, commands[currentCommandName].Filename)
+			if _, exists := commands[currentCommandBlock.Name]; exists {
+				return ast.WalkStop, fmt.Errorf("%w: '%s' was already defined in '%s'", ErrDuplicateCommand, currentCommandBlock.Name, commands[currentCommandBlock.Name].Filename)
 			}
 
-			logrus.Debug(fmt.Sprintf("Found heading: '%s' with command: '%s' and dependencies: %v", string(heading.Text(source)), currentCommandName, currentCommandDeps))
+			logrus.Debug(fmt.Sprintf("Found heading: '%s' with command: '%s' and dependencies: %v", string(heading.Text(source)), currentCommandBlock.Name, currentCommandBlock.Dependencies))
+			// findCodeBlocksWalker will extract the code blocks below this heading
+			// and append them to the currentCommandBlock.CodeBlocks
 			err = ast.Walk(heading.NextSibling(), findCodeBlocksWalker)
 			if err != nil {
 				return ast.WalkStop, err
+			}
+
+			if len(currentCommandBlock.CodeBlocks) == 0 {
+				logrus.Debug(fmt.Sprintf("No code blocks found for command '%s' in '%s'.", currentCommandBlock.Name, markdownFile))
+			}
+
+			// If the command is not already defined, add it to the commands map
+			if _, ok := commands[currentCommandBlock.Name]; len(currentCommandBlock.CodeBlocks) > 0 && !ok {
+				commands[currentCommandBlock.Name] = currentCommandBlock
 			}
 		}
 		return ast.WalkContinue, nil

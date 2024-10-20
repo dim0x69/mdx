@@ -4,16 +4,16 @@ Imagine you have the following Markdown  file to document your commands:
 
 
     # demo.md
-    ## `simple_echo` - Simple echo in shell
+    ## [simple_echo]() - Simple echo in shell
 
     ```sh
-    echo "{{.arg1}} {{.arg2}}"
+    echo "hello world"
     ```
 
 With `mdx` you execute the `sh` code block:
 
 ```
-% ./mdx simple_echo hello world
+% mdx simple_echo
 hello world
 ```
 
