@@ -122,7 +122,7 @@ func TestNoShebangNoInfostringDefined(t *testing.T) {
 	test := &FileParseTest{
 		filePath:     "tests/err_no_shebang_no_infostring.md",
 		expectedCmds: nil,
-		expectedErr:  nil,
+		expectedErr:  ErrNoInfostringOrShebang,
 	}
 	RunFileParseTest(t, test)
 

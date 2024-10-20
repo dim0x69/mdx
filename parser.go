@@ -147,19 +147,10 @@ func loadCommands(markdownFile string) error {
 				code_shebang = true
 			}
 
-			// ignore code blocks for languages which have neither infostring nor shebang defined.
-			// Notify the user
+			// return an error for code blocks which have no infostring and no shebang
 			if lang == "" && !code_shebang {
-				if _, launcherExists := launchers[lang]; !launcherExists {
-					logrus.Debug(fmt.Sprintf("no launcher defined for infostring: '%s'. Ignoring command '%s' in '%s'", lang, currentCommandName, markdownFile))
-					return ast.WalkContinue, nil
-				}
-			}
-
-			// ignore code blocks which have no infostring and no shebang
-			if lang == "" && !code_shebang {
-				logrus.Debug(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'. Ignoring command.", currentCommandName, markdownFile))
-				return ast.WalkContinue, nil
+				logrus.Warn(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'.", currentCommandName, markdownFile))
+				return ast.WalkStop, ErrNoInfostringOrShebang
 			}
 
 			// notify the user if both language and shebang are defined
@@ -189,13 +180,13 @@ func loadCommands(markdownFile string) error {
 			currentCommandDeps = heading.deps
 
 			if _, exists := commands[currentCommandName]; exists {
-				return ast.WalkStop, fmt.Errorf("duplicate command found: '%s' was already defined in '%s'", currentCommandName, commands[currentCommandName].Filename)
+				return ast.WalkStop, fmt.Errorf("%w: '%s' was already defined in '%s'", ErrDuplicateCommand, currentCommandName, commands[currentCommandName].Filename)
 			}
 
 			logrus.Debug(fmt.Sprintf("Found heading: '%s' with command: '%s' and dependencies: %v", string(heading.Text(source)), currentCommandName, currentCommandDeps))
 			err = ast.Walk(heading.NextSibling(), findCodeBlocksWalker)
 			if err != nil {
-				return ast.WalkStop, nil
+				return ast.WalkStop, err
 			}
 		}
 		return ast.WalkContinue, nil
