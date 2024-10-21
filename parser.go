@@ -101,9 +101,9 @@ func loadCommands(markdownFile string) error {
 		The search strategy is as follows. We start at the beginning of the document, parse the Markdown file into an AST and walk the tree:
 
 		1 We search for a heading. (findHeadingWalker)
-		2 If we find a heading, we call the findCodeBlocksWalker with the NextSibling of the Heading.
-		  findCodeBlocksWalker which extracts the commands from all code blocks below this heading.
-		  findCodeBlocksWalker runs until it reaches the next heading.
+		2 If we find a heading, we call the praseCodeBlock with the NextSibling of the Heading.
+		  praseCodeBlock which extracts the commands from all code blocks below this heading.
+		  praseCodeBlock runs until it reaches the next heading.
 		3 Goto 1.
 	*/
 
