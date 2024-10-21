@@ -28,11 +28,45 @@ func errorExit(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
+var fileFlag *string
+
+func getMarkdownFilePaths() []string {
+	var mdFiles []string
+	if fileFlag != nil {
+		mdFiles = []string{*fileFlag}
+
+	} else if mdxFileDir := os.Getenv("MDX_FILE_DIR"); mdxFileDir != "" {
+		var err error
+		mdFiles, err = filepath.Glob(filepath.Join(mdxFileDir, "*.md"))
+		logrus.Debug(fmt.Sprintf("Searching for markdown files in %s", mdxFileDir))
+		if err != nil {
+			errorExit("Error searching for markdown files in %s: %v", mdxFileDir, err)
+		}
+	} else if mdxFilePath := os.Getenv("MDX_FILE_PATH"); mdxFilePath != "" {
+		var err error
+		mdFiles = []string{mdxFilePath}
+		logrus.Debug(fmt.Sprintf("Searching in markdown file %s", mdxFilePath))
+		if err != nil {
+			errorExit("Error searching for markdown files in %s: %v", mdxFilePath, err)
+		}
+	} else {
+		var err error
+		mdFiles, err = filepath.Glob("*.md")
+		if err != nil {
+			errorExit("Error searching for markdown files: %v", err)
+		}
+	}
+
+	if len(mdFiles) == 0 {
+		errorExit("No markdown files found")
+	}
+	return mdFiles
+}
+
 func main() {
 	setLogLevel()
 
-	// Define command-line flags
-	fileFlag := flag.String("file", "", "Specify a markdown file")
+	fileFlag = flag.String("file", "", "Specify a markdown file")
 	flag.Parse()
 
 	logrus.Debug("MDX started with parameters:", os.Args)
@@ -61,34 +95,7 @@ func main() {
 		}
 	}
 
-	// Determine the list of markdown files to load commands from
-	var mdFiles []string
-	if *fileFlag != "" {
-		mdFiles = []string{*fileFlag}
-	} else if mdxFileDir := os.Getenv("MDX_FILE_DIR"); mdxFileDir != "" {
-		var err error
-		mdFiles, err = filepath.Glob(filepath.Join(mdxFileDir, "*.md"))
-		if err != nil {
-			errorExit("Error searching for markdown files in %s: %v", mdxFileDir, err)
-		}
-	} else if mdxFilePath := os.Getenv("MDX_FILE_PATH"); mdxFilePath != "" {
-		var err error
-		mdFiles, err = filepath.Glob(filepath.Join(mdxFilePath, "*.md"))
-		if err != nil {
-			errorExit("Error searching for markdown files in %s: %v", mdxFilePath, err)
-		}
-	} else {
-		var err error
-		mdFiles, err = filepath.Glob("*.md")
-		if err != nil {
-			errorExit("Error searching for markdown files: %v", err)
-		}
-	}
-
-	if len(mdFiles) == 0 {
-		errorExit("No markdown files found")
-	}
-
+	mdFiles := getMarkdownFilePaths()
 	loadCommandsFromFiles(mdFiles)
 
 	// Execute command
