@@ -23,6 +23,8 @@ hello world
 
 You can simply download a binary which fits your operating system and achitecture from the [releases page](https://github.com/dim0x69/mdx/releases).
 
+Then just use the demo.md from above to execute `simple_echo`.
+
 ### Build
 
 Go should be installed on your system: Follow [this guide](https://go.dev/doc/install) to install go in your PATH.
