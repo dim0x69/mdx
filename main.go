@@ -28,14 +28,14 @@ func errorExit(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-var fileFlag *string
-
-func getMarkdownFilePaths() []string {
+func getMarkdownFilePaths(fileFlag string) []string {
 	var mdFiles []string
-	if fileFlag != nil {
-		mdFiles = []string{*fileFlag}
+	if fileFlag != "" {
+		logrus.Debug("using file flag to find markdown files")
+		mdFiles = []string{fileFlag}
 
 	} else if mdxFileDir := os.Getenv("MDX_FILE_DIR"); mdxFileDir != "" {
+		logrus.Debug("using MDX_FILE_DIR")
 		var err error
 		mdFiles, err = filepath.Glob(filepath.Join(mdxFileDir, "*.md"))
 		logrus.Debug(fmt.Sprintf("Searching for markdown files in %s", mdxFileDir))
@@ -43,6 +43,7 @@ func getMarkdownFilePaths() []string {
 			errorExit("Error searching for markdown files in %s: %v", mdxFileDir, err)
 		}
 	} else if mdxFilePath := os.Getenv("MDX_FILE_PATH"); mdxFilePath != "" {
+		logrus.Debug("using MDX_FILE_PATH")
 		var err error
 		mdFiles = []string{mdxFilePath}
 		logrus.Debug(fmt.Sprintf("Searching in markdown file %s", mdxFilePath))
@@ -50,6 +51,7 @@ func getMarkdownFilePaths() []string {
 			errorExit("Error searching for markdown files in %s: %v", mdxFilePath, err)
 		}
 	} else {
+		logrus.Debug("using CWD to find markdown files")
 		var err error
 		mdFiles, err = filepath.Glob("*.md")
 		if err != nil {
@@ -66,7 +68,7 @@ func getMarkdownFilePaths() []string {
 func main() {
 	setLogLevel()
 
-	fileFlag = flag.String("file", "", "Specify a markdown file")
+	fileFlag := flag.String("file", "", "Specify a markdown file")
 	flag.Parse()
 
 	logrus.Debug("MDX started with parameters:", os.Args)
@@ -95,7 +97,7 @@ func main() {
 		}
 	}
 
-	mdFiles := getMarkdownFilePaths()
+	mdFiles := getMarkdownFilePaths(*fileFlag)
 	loadCommandsFromFiles(mdFiles)
 
 	// Execute command
