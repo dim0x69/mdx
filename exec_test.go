@@ -93,6 +93,34 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
 	}
 }
 
+func TestExecuteCodeBlock_ValidCodeBlockExecution_CWD(t *testing.T) {
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	codeBlock := CodeBlock{
+		Lang: "sh",
+		Code: `echo "Hello, {{.arg1}}" > file.txt && cat ${PWD}/file.txt && rm file.txt`,
+		Meta: map[string]interface{}{"shebang": false},
+	}
+	args := []string{"World"}
+	var wantErr error = nil
+
+	output, err := captureOutput(func() error {
+		return executeCodeBlock(codeBlock, args...)
+	})
+
+	expectedOutput := "Hello, World\n"
+	if output != expectedOutput {
+		t.Errorf("executeCodeBlock() output = %v, expectedOutput %v", output, expectedOutput)
+	}
+
+	if wantErr != nil {
+		if !errors.Is(err, wantErr) {
+			t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+		}
+	} else if err != nil {
+		t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+	}
+}
+
 func TestExecuteCodeBlock_ValidCodeBlockExecution_SheBang(t *testing.T) {
 	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
 	codeBlock := CodeBlock{

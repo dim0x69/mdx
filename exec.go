@@ -176,6 +176,9 @@ func executeCodeBlock(codeBlock CodeBlock, args ...string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	cmd.Dir = os.Getenv("PWD")
+	logrus.Debug(fmt.Sprintf("Executing command in directory: %s", cmd.Dir))
+
 	if err := cmd.Run(); err != nil {
 		content, readErr := os.ReadFile(tmpFile.Name())
 		if readErr != nil {
