@@ -184,6 +184,5 @@ func executeCodeBlock(codeBlock CodeBlock, args ...string) error {
 		fmt.Printf("Content of tmpFile:\n%s\n", content)
 		return fmt.Errorf("failed to execute command: %v", err)
 	}
-
 	return nil
 }
