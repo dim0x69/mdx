@@ -10,4 +10,5 @@ var (
 	ErrNoLauncherDefined            = errors.New("no launcher defined for infostring")
 	ErrNoInfostringOrShebang        = errors.New("no infostring and no shebang defined")
 	ErrDuplicateCommand             = errors.New("duplicate command found")
+	ErrDependencyNotFound           = errors.New("dependency not found")
 )

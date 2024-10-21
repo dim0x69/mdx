@@ -193,14 +193,12 @@ func loadCommands(markdownFile string) error {
 				return ast.WalkStop, err
 			}
 
-			if len(currentCommandBlock.CodeBlocks) == 0 {
+			if len(currentCommandBlock.CodeBlocks) > 0 {
+				commands[currentCommandBlock.Name] = currentCommandBlock
+			} else {
 				logrus.Debug(fmt.Sprintf("No code blocks found for command '%s' in '%s'.", currentCommandBlock.Name, markdownFile))
 			}
 
-			// If the command is not already defined, add it to the commands map
-			if _, ok := commands[currentCommandBlock.Name]; len(currentCommandBlock.CodeBlocks) > 0 && !ok {
-				commands[currentCommandBlock.Name] = currentCommandBlock
-			}
 		}
 		return ast.WalkContinue, nil
 	}

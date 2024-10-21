@@ -76,7 +76,7 @@ func main() {
 
 	// execute command
 	if _, ok := commands[commandName]; ok {
-		err := executeCommand(commandName, commandArgs...)
+		err := executeCommandBlock(commands[commandName], commandArgs...)
 		if err != nil {
 			errorExit("Error executing command: %v", err)
 		}

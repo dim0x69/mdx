@@ -71,13 +71,36 @@ func loadLaunchers() {
 	logrus.Debug("Added launchers: ", addedLaunchers)
 }
 
-func executeCodeBlock(commandName string, args ...string) error {
-	logrus.Debug(fmt.Sprintf("Executing command %s with args %v", commandName, args))
-
-	commandBlock, ok := commands[commandName]
-	if !ok {
-		return fmt.Errorf("%w: %s", ErrNoCommandFoundCommands, commandName)
+func executeCommandBlock(commandBlock CommandBlock, args ...string) error {
+	for _, dep := range commandBlock.Dependencies {
+		if _, ok := commands[dep]; !ok {
+			return fmt.Errorf("%w: %s", ErrDependencyNotFound, dep)
+		}
+		dependency := commands[dep]
+		if err := executeCommandBlock(dependency, args...); err != nil {
+			logrus.Debug(fmt.Sprintf("Executing command %s with args %v", dependency.Name, args))
+			return err
+		}
 	}
+
+	for i, codeBlock := range commandBlock.CodeBlocks {
+		logrus.Debug(fmt.Sprintf("Executing Code Block #%d", i))
+
+		if i == 0 {
+			if err := executeCodeBlock(codeBlock, args...); err != nil {
+				return err
+			}
+		} else {
+			if err := executeCodeBlock(codeBlock); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+
+}
+func executeCodeBlock(codeBlock CodeBlock, args ...string) error {
 
 	// Create a map for the template arguments
 	argMap := make(map[string]string)
@@ -87,7 +110,7 @@ func executeCodeBlock(commandName string, args ...string) error {
 
 	// Validate that all placeholders in the template are provided in args and vice versa
 	placeholderPattern := regexp.MustCompile(`{{\s*\.arg(\d+)\s*}}`)
-	matches := placeholderPattern.FindAllStringSubmatch(commandBlock.Code, -1)
+	matches := placeholderPattern.FindAllStringSubmatch(codeBlock.Code, -1)
 
 	placeholderSet := make(map[string]struct{})
 	for _, match := range matches {
@@ -104,12 +127,11 @@ func executeCodeBlock(commandName string, args ...string) error {
 	for placeholder := range placeholderSet {
 		argIndex := fmt.Sprintf("arg%s", placeholder)
 		if _, ok := argMap[argIndex]; !ok {
-			return fmt.Errorf("%w: {{.arg%s}}, command \"%s\"", ErrArgUsedInTemplateNotProvided, placeholder, commandName)
+			return fmt.Errorf("%w: {{.arg%s}}", ErrArgUsedInTemplateNotProvided, placeholder)
 		}
 	}
 
-	// Parse and execute the template
-	tmpl, err := template.New("command").Parse(commandBlock.Code)
+	tmpl, err := template.New("command").Parse(codeBlock.Code)
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %v", err)
 	}
@@ -120,9 +142,9 @@ func executeCodeBlock(commandName string, args ...string) error {
 		return fmt.Errorf("failed to execute template: %v", err)
 	}
 
-	launcher, ok := launchers[commandBlock.Lang]
+	launcher, ok := launchers[codeBlock.Lang]
 	if !ok {
-		return fmt.Errorf("%w: %s", ErrNoLauncherDefined, commandBlock.Lang)
+		return fmt.Errorf("%w: %s", ErrNoLauncherDefined, codeBlock.Lang)
 	}
 
 	// Write the rendered code to the temporary file
@@ -137,7 +159,7 @@ func executeCodeBlock(commandName string, args ...string) error {
 
 	defer os.Remove(tmpFile.Name())
 
-	if !commandBlock.Meta["shebang"].(bool) {
+	if !codeBlock.Meta["shebang"].(bool) {
 		if _, err := tmpFile.Write([]byte(fmt.Sprintf("#!/usr/bin/env %s\n", launcher.cmd))); err != nil {
 			return fmt.Errorf("failed to write to temporary file: %v", err)
 		}
