@@ -135,6 +135,48 @@ func TestOneCommandTwoCodeBlocks(t *testing.T) {
 	RunFileParseTest(t, test)
 }
 
+func TestTwoCommandsTwoCodeBlocks(t *testing.T) {
+	test := &FileParseTest{
+		filePath: "tests/two_commands_two_code_blocks.md",
+		expectedCmds: map[string]CommandBlock{
+			"simple_echo1": {
+				CodeBlocks: []CodeBlock{
+					{
+						Lang: "sh",
+						Code: "code1",
+						Meta: map[string]interface{}{"shebang": false},
+					},
+					{
+						Lang: "python",
+						Code: "#!/bin/venv/python\ncode2",
+						Meta: map[string]interface{}{"shebang": true},
+					},
+				},
+				Dependencies: []string{"dep1"},
+				Meta:         map[string]interface{}{},
+			},
+			"simple_echo2": {
+				CodeBlocks: []CodeBlock{
+					{
+						Lang: "sh",
+						Code: "code1",
+						Meta: map[string]interface{}{"shebang": false},
+					},
+					{
+						Lang: "python",
+						Code: "#!/bin/venv/python\ncode2",
+						Meta: map[string]interface{}{"shebang": true},
+					},
+				},
+				Dependencies: []string{},
+				Meta:         map[string]interface{}{},
+			},
+		},
+		expectedErr: nil,
+	}
+	RunFileParseTest(t, test)
+}
+
 func TestParseShebang(t *testing.T) {
 	test := &FileParseTest{
 		filePath: "tests/test2.md",

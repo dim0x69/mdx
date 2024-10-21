@@ -101,9 +101,8 @@ func loadCommands(markdownFile string) error {
 		The search strategy is as follows. We start at the beginning of the document, parse the Markdown file into an AST and walk the tree:
 
 		1 We search for a heading. (findHeadingWalker)
-		2 If we find a heading, we call the praseCodeBlock with the NextSibling of the Heading.
-		  praseCodeBlock which extracts the commands from all code blocks below this heading.
-		  praseCodeBlock runs until it reaches the next heading.
+		2 If we find a heading, we walk all siblings of the heading and call praseCodeBlock for all FencedCodeBlock nodes.
+		  praseCodeBlock extacts the code from the code block, updates the currentCommandBlock and appends the code block to the currentCommandBlock.CodeBlocks.
 		3 Goto 1.
 	*/
 
@@ -126,16 +125,16 @@ func loadCommands(markdownFile string) error {
 
 	var currentCommandBlock CommandBlock
 
-	praseCodeBlock := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	praseCodeBlock := func(n ast.Node) error {
 
-		if block, ok := n.(*ast.FencedCodeBlock); ok && entering {
+		if block, ok := n.(*ast.FencedCodeBlock); ok {
 
 			lang := string(block.Language(source))
 			code := string(block.Text(source))
 
 			if code == "" {
 				logrus.Warn(fmt.Sprintf("Empty code block found for command '%s' in '%s'.", currentCommandBlock.Name, markdownFile))
-				return ast.WalkContinue, nil
+				return nil
 			}
 			code_shebang := false
 			if len(code) >= 2 && code[:2] == "#!" {
@@ -144,7 +143,7 @@ func loadCommands(markdownFile string) error {
 
 			if lang == "" && !code_shebang {
 				logrus.Warn(fmt.Sprintf("Found Code Block with no infostring and no shebang defined for command '%s' in '%s'. Ignoring", currentCommandBlock.Name, markdownFile))
-				return ast.WalkContinue, nil
+				return nil
 			}
 
 			if lang != "" && code_shebang {
@@ -162,7 +161,7 @@ func loadCommands(markdownFile string) error {
 			logrus.Debug(fmt.Sprintf("Wrote new code block. Infostring: '%s', Command: '%s'", lang, currentCommandBlock.Name))
 		}
 
-		return ast.WalkContinue, nil
+		return nil
 	}
 
 	findHeadingWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -189,14 +188,12 @@ func loadCommands(markdownFile string) error {
 				if _, ok := sibling.(*MdxHeading); ok {
 					break
 				}
-				err = ast.Walk(sibling, praseCodeBlock)
+				if _, ok := sibling.(*ast.FencedCodeBlock); ok {
+					err = praseCodeBlock(sibling)
+				}
 				if err != nil {
 					return ast.WalkStop, err
 				}
-			}
-			err = ast.Walk(heading, praseCodeBlock)
-			if err != nil {
-				return ast.WalkStop, err
 			}
 
 			if len(currentCommandBlock.CodeBlocks) > 0 {
