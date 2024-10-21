@@ -17,6 +17,8 @@ With `mdx` you execute the `sh` code block:
 hello world
 ```
 
+🚀 Find more examples [in the Wiki.](https://github.com/dim0x69/mdx/wiki/Examples)
+
 ## Getting started
 
 ### Installation
