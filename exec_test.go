@@ -25,6 +25,46 @@ func captureOutput(f func() error) (string, error) {
 
 	return buf.String(), err
 }
+
+func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	commandBlock := CommandBlock{
+
+		CodeBlocks: []CodeBlock{
+			{
+				Lang: "sh",
+				Code: `echo "Hello, {{.arg1}}"`,
+				Meta: map[string]interface{}{"shebang": false},
+			},
+			{
+				Lang: "sh",
+				Code: `echo -n "Hello"`,
+				Meta: map[string]interface{}{"shebang": false},
+			},
+		},
+		Dependencies: []string{},
+		Meta:         map[string]interface{}{},
+	}
+	args := []string{"World"}
+	var wantErr error = nil
+
+	output, err := captureOutput(func() error {
+		return executeCommandBlock(commandBlock, args...)
+	})
+
+	expectedOutput := "Hello, World\nHello"
+	if output != expectedOutput {
+		t.Errorf("executeCodeBlock() output = %v, expectedOutput %v", output, expectedOutput)
+	}
+
+	if wantErr != nil {
+		if !errors.Is(err, wantErr) {
+			t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+		}
+	} else if err != nil {
+		t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+	}
+}
 func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
 	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
 	codeBlock := CodeBlock{
