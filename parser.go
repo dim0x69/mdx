@@ -126,14 +126,7 @@ func loadCommands(markdownFile string) error {
 
 	var currentCommandBlock CommandBlock
 
-	findCodeBlocksWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-
-		if _, ok := n.(*ast.Heading); ok && !entering {
-			return ast.WalkStop, nil
-		}
-		if _, ok := n.(*MdxHeading); ok && !entering {
-			return ast.WalkStop, nil
-		}
+	praseCodeBlock := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 
 		if block, ok := n.(*ast.FencedCodeBlock); ok && entering {
 
@@ -150,8 +143,8 @@ func loadCommands(markdownFile string) error {
 			}
 
 			if lang == "" && !code_shebang {
-				logrus.Warn(fmt.Sprintf("No infostring and no shebang defined for command '%s' in '%s'.", currentCommandBlock.Name, markdownFile))
-				return ast.WalkStop, ErrNoInfostringOrShebang
+				logrus.Warn(fmt.Sprintf("Found Code Block with no infostring and no shebang defined for command '%s' in '%s'. Ignoring", currentCommandBlock.Name, markdownFile))
+				return ast.WalkContinue, nil
 			}
 
 			if lang != "" && code_shebang {
@@ -188,7 +181,20 @@ func loadCommands(markdownFile string) error {
 			logrus.Debug(fmt.Sprintf("Found heading: '%s' with command: '%s' and dependencies: %v", string(heading.Text(source)), currentCommandBlock.Name, currentCommandBlock.Dependencies))
 			// findCodeBlocksWalker will extract the code blocks below this heading
 			// and append them to the currentCommandBlock.CodeBlocks
-			err = ast.Walk(heading.NextSibling(), findCodeBlocksWalker)
+
+			for sibling := heading.NextSibling(); sibling != nil; sibling = sibling.NextSibling() {
+				if _, ok := sibling.(*ast.Heading); ok {
+					break
+				}
+				if _, ok := sibling.(*MdxHeading); ok {
+					break
+				}
+				err = ast.Walk(sibling, praseCodeBlock)
+				if err != nil {
+					return ast.WalkStop, err
+				}
+			}
+			err = ast.Walk(heading, praseCodeBlock)
 			if err != nil {
 				return ast.WalkStop, err
 			}
