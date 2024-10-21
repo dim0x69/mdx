@@ -50,21 +50,8 @@ func main() {
 
 	loadLaunchers()
 
-	// Load commands from the specified markdown file or
-	// all markdown files in the current directory
-	if *fileFlag != "" {
-		err := loadCommands(*fileFlag)
-		if err != nil {
-			errorExit("Error loading commands from %s: %v", *fileFlag, err)
-		}
-	} else {
-		mdFiles, err := filepath.Glob("*.md")
-		if err != nil {
-			errorExit("Error searching for markdown files: %v", err)
-		}
-		if len(mdFiles) == 0 {
-			errorExit("No markdown files found in the current directory")
-		}
+	// Function to load commands from a list of markdown files
+	loadCommandsFromFiles := func(mdFiles []string) {
 		for _, mdFile := range mdFiles {
 			logrus.Debug(fmt.Sprintf("Loading file %s", mdFile))
 			err := loadCommands(mdFile)
@@ -74,7 +61,37 @@ func main() {
 		}
 	}
 
-	// execute command
+	// Determine the list of markdown files to load commands from
+	var mdFiles []string
+	if *fileFlag != "" {
+		mdFiles = []string{*fileFlag}
+	} else if mdxFileDir := os.Getenv("MDX_FILE_DIR"); mdxFileDir != "" {
+		var err error
+		mdFiles, err = filepath.Glob(filepath.Join(mdxFileDir, "*.md"))
+		if err != nil {
+			errorExit("Error searching for markdown files in %s: %v", mdxFileDir, err)
+		}
+	} else if mdxFilePath := os.Getenv("MDX_FILE_PATH"); mdxFilePath != "" {
+		var err error
+		mdFiles, err = filepath.Glob(filepath.Join(mdxFilePath, "*.md"))
+		if err != nil {
+			errorExit("Error searching for markdown files in %s: %v", mdxFilePath, err)
+		}
+	} else {
+		var err error
+		mdFiles, err = filepath.Glob("*.md")
+		if err != nil {
+			errorExit("Error searching for markdown files: %v", err)
+		}
+	}
+
+	if len(mdFiles) == 0 {
+		errorExit("No markdown files found")
+	}
+
+	loadCommandsFromFiles(mdFiles)
+
+	// Execute command
 	if _, ok := commands[commandName]; ok {
 		err := executeCommandBlock(commands[commandName], commandArgs...)
 		if err != nil {
