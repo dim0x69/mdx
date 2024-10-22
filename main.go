@@ -75,9 +75,13 @@ func getMarkdownFilePaths(fileFlag string) []string {
 
 func main() {
 	setLogLevel()
-
 	fileFlag := flag.String("file", "", "Specify a markdown file")
+	fileFlagShort := flag.String("f", "", "Specify a markdown file (shorthand)")
 	flag.Parse()
+
+	if *fileFlagShort != "" {
+		fileFlag = fileFlagShort
+	}
 
 	logrus.Debug("MDX started with parameters:", os.Args)
 
