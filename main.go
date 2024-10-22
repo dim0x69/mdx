@@ -73,6 +73,22 @@ func getMarkdownFilePaths(fileFlag string) []string {
 	return mdFiles
 }
 
+type CodeBlock struct {
+	Lang string         // the infostring from the code fence
+	Code string         // the content of the code fence
+	Meta map[string]any // contains metadata for the code block
+
+}
+
+// CommandBlock represents a heading, which contains one to multiple code fences.
+type CommandBlock struct {
+	Name         string         // the name of the command, same as the key in the commands map
+	Dependencies []string       // commands to execute before this command
+	CodeBlocks   []CodeBlock    // the code fences below the heading
+	Filename     string         // the filename of the markdown file
+	Meta         map[string]any // placeholder for the future
+}
+
 func main() {
 	setLogLevel()
 	fileFlag := flag.String("file", "", "Specify a markdown file")
@@ -98,17 +114,19 @@ func main() {
 
 	loadLaunchers()
 
+	var commands = map[string]CommandBlock{}
+
 	mdFiles := getMarkdownFilePaths(*fileFlag)
 	for _, mdFile := range mdFiles {
 		logrus.Debug(fmt.Sprintf("Loading file %s", mdFile))
-		err := loadCommands(mdFile)
+		err := loadCommands(mdFile, commands)
 		if err != nil {
 			errorExit("Error loading commands from %s: %v", mdFile, err)
 		}
 	}
 
 	if command, ok := commands[commandName]; ok {
-		err := executeCommandBlock(&command, commandArgs...)
+		err := executeCommandBlock(commands, &command, commandArgs...)
 		if err != nil {
 			errorExit("Error executing command: %v", err)
 		}

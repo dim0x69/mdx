@@ -96,7 +96,7 @@ func extractCommandAndDepsFromHeading(heading string) (string, []string) {
 	return commandName, []string{}
 }
 
-func loadCommands(markdownFile string) error {
+func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 	/*
 		The search strategy is as follows. We start at the beginning of the document, parse the Markdown file into an AST and walk the tree:
 

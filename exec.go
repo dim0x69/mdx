@@ -20,25 +20,6 @@ func isExecutableInPath(candidates []string) string {
 	return ""
 }
 
-type CodeBlock struct {
-	Lang string         // the infostring from the code fence
-	Code string         // the content of the code fence
-	Meta map[string]any // contains metadata for the code block
-
-}
-
-// CommandBlock represents a heading, which contains one to multiple code fences.
-type CommandBlock struct {
-	Name         string         // the name of the command, same as the key in the commands map
-	Dependencies []string       // commands to execute before this command
-	CodeBlocks   []CodeBlock    // the code fences below the heading
-	Filename     string         // the filename of the markdown file
-	Meta         map[string]any // placeholder for the future
-}
-
-// Global store for parsed commands
-var commands = map[string]CommandBlock{}
-
 type LauncherBlock struct {
 	cmd       string // The command to execute for the infostring above
 	extension string // The file extension for the language
@@ -71,13 +52,13 @@ func loadLaunchers() {
 	logrus.Debug("Added launchers: ", addedLaunchers)
 }
 
-func executeCommandBlock(commandBlock *CommandBlock, args ...string) error {
+func executeCommandBlock(commands map[string]CommandBlock, commandBlock *CommandBlock, args ...string) error {
 	for _, dep := range commandBlock.Dependencies {
 		if _, ok := commands[dep]; !ok {
 			return fmt.Errorf("%w: %s", ErrDependencyNotFound, dep)
 		}
 		dependency := commands[dep]
-		if err := executeCommandBlock(&dependency, args...); err != nil {
+		if err := executeCommandBlock(commands, &dependency); err != nil {
 			logrus.Debug(fmt.Sprintf("Executing command %s with args %v", dependency.Name, args))
 			return err
 		}

@@ -28,7 +28,9 @@ func captureOutput(f func() error) (string, error) {
 
 func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
 	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
-	commandBlock := CommandBlock{
+	commands := make(map[string]CommandBlock)
+
+	commands["test"] = CommandBlock{
 
 		CodeBlocks: []CodeBlock{
 			{
@@ -48,8 +50,9 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
 	args := []string{"World"}
 	var wantErr error = nil
 
+	commandBlock := commands["test"]
 	output, err := captureOutput(func() error {
-		return executeCommandBlock(&commandBlock, args...)
+		return executeCommandBlock(commands, &commandBlock, args...)
 	})
 
 	expectedOutput := "Hello, World\nHello"
@@ -65,6 +68,7 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
 		t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
 	}
 }
+
 func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
 	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
 	codeBlock := CodeBlock{

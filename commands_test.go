@@ -15,8 +15,8 @@ type FileParseTest struct {
 
 func RunFileParseTest(t *testing.T, tt *FileParseTest) {
 	t.Run(tt.filePath, func(t *testing.T) {
-		commands = map[string]CommandBlock{}
-		err := loadCommands(tt.filePath)
+		commands := map[string]CommandBlock{}
+		err := loadCommands(tt.filePath, commands)
 
 		if (err != nil || tt.expectedErr != nil) && !errors.Is(err, tt.expectedErr) {
 			t.Fatalf("expected error %v, got %v", tt.expectedErr, err)
