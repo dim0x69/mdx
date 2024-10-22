@@ -28,6 +28,14 @@ func errorExit(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
+/*
+getMarkdownFilePaths returns a list of markdown files to load commands from.
+The order of precedence is:
+1. The file flag
+2. The MDX_FILE_DIR environment variable
+3. The MDX_FILE_PATH environment variable
+4. The current working directory
+*/
 func getMarkdownFilePaths(fileFlag string) []string {
 	var mdFiles []string
 	if fileFlag != "" {
