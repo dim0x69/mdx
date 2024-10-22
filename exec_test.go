@@ -49,7 +49,7 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
 	var wantErr error = nil
 
 	output, err := captureOutput(func() error {
-		return executeCommandBlock(commandBlock, args...)
+		return executeCommandBlock(&commandBlock, args...)
 	})
 
 	expectedOutput := "Hello, World\nHello"
@@ -76,7 +76,7 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
 	var wantErr error = nil
 
 	output, err := captureOutput(func() error {
-		return executeCodeBlock(codeBlock, args...)
+		return executeCodeBlock(&codeBlock, args...)
 	})
 
 	expectedOutput := "Hello, World\n"
@@ -104,7 +104,7 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution_CWD(t *testing.T) {
 	var wantErr error = nil
 
 	output, err := captureOutput(func() error {
-		return executeCodeBlock(codeBlock, args...)
+		return executeCodeBlock(&codeBlock, args...)
 	})
 
 	expectedOutput := "Hello, World\n"
@@ -132,7 +132,7 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution_SheBang(t *testing.T) {
 	var wantErr error = nil
 
 	output, err := captureOutput(func() error {
-		return executeCodeBlock(codeBlock, args...)
+		return executeCodeBlock(&codeBlock, args...)
 	})
 
 	expectedOutput := "Hello, World\n"
@@ -158,7 +158,7 @@ func TestExecuteCodeBlock_MissingArgument(t *testing.T) {
 	args := []string{}
 	wantErr := ErrArgUsedInTemplateNotProvided
 
-	err := executeCodeBlock(codeBlock, args...)
+	err := executeCodeBlock(&codeBlock, args...)
 
 	if wantErr != nil {
 		if !errors.Is(err, wantErr) {
@@ -178,7 +178,7 @@ func TestExecuteCodeBlock_UnusedArgument(t *testing.T) {
 	args := []string{"World", "Extra"}
 	wantErr := ErrArgProvidedButNotUsed
 
-	err := executeCodeBlock(codeBlock, args...)
+	err := executeCodeBlock(&codeBlock, args...)
 
 	if wantErr != nil {
 		if !errors.Is(err, wantErr) {
@@ -198,7 +198,7 @@ func TestExecuteCodeBlock_TemplateParsingError(t *testing.T) {
 	args := []string{"World"}
 	wantErr := ErrArgProvidedButNotUsed
 
-	err := executeCodeBlock(codeBlock, args...)
+	err := executeCodeBlock(&codeBlock, args...)
 
 	if wantErr != nil {
 		if !errors.Is(err, wantErr) {
@@ -218,7 +218,7 @@ func TestExecuteCodeBlock_LauncherNotDefined(t *testing.T) {
 	args := []string{"World"}
 	wantErr := ErrNoLauncherDefined
 
-	err := executeCodeBlock(codeBlock, args...)
+	err := executeCodeBlock(&codeBlock, args...)
 
 	if wantErr != nil {
 		if !errors.Is(err, wantErr) {

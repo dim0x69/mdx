@@ -71,13 +71,13 @@ func loadLaunchers() {
 	logrus.Debug("Added launchers: ", addedLaunchers)
 }
 
-func executeCommandBlock(commandBlock CommandBlock, args ...string) error {
+func executeCommandBlock(commandBlock *CommandBlock, args ...string) error {
 	for _, dep := range commandBlock.Dependencies {
 		if _, ok := commands[dep]; !ok {
 			return fmt.Errorf("%w: %s", ErrDependencyNotFound, dep)
 		}
 		dependency := commands[dep]
-		if err := executeCommandBlock(dependency, args...); err != nil {
+		if err := executeCommandBlock(&dependency, args...); err != nil {
 			logrus.Debug(fmt.Sprintf("Executing command %s with args %v", dependency.Name, args))
 			return err
 		}
@@ -87,11 +87,11 @@ func executeCommandBlock(commandBlock CommandBlock, args ...string) error {
 		logrus.Debug(fmt.Sprintf("Executing Code Block #%d", i))
 
 		if i == 0 {
-			if err := executeCodeBlock(codeBlock, args...); err != nil {
+			if err := executeCodeBlock(&codeBlock, args...); err != nil {
 				return err
 			}
 		} else {
-			if err := executeCodeBlock(codeBlock); err != nil {
+			if err := executeCodeBlock(&codeBlock); err != nil {
 				return err
 			}
 		}
@@ -100,7 +100,7 @@ func executeCommandBlock(commandBlock CommandBlock, args ...string) error {
 	return nil
 
 }
-func executeCodeBlock(codeBlock CodeBlock, args ...string) error {
+func executeCodeBlock(codeBlock *CodeBlock, args ...string) error {
 
 	// Create a map for the template arguments
 	argMap := make(map[string]string)

@@ -92,8 +92,8 @@ func main() {
 	loadCommandsFromFiles(mdFiles)
 
 	// Execute command
-	if _, ok := commands[commandName]; ok {
-		err := executeCommandBlock(commands[commandName], commandArgs...)
+	if command, ok := commands[commandName]; ok {
+		err := executeCommandBlock(&command, commandArgs...)
 		if err != nil {
 			errorExit("Error executing command: %v", err)
 		}
