@@ -24,7 +24,7 @@ func setLogLevel() {
 }
 
 func errorExit(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, format, args...)
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)
 }
 
@@ -83,7 +83,7 @@ func main() {
 
 	// Check for subcommands
 	if flag.NArg() < 1 {
-		errorExit("Usage: mdx [-file <markdown-file>] <command> [args]\n")
+		errorExit("Usage: mdx [-file <markdown-file>] <command> [args]")
 	}
 
 	commandName := flag.Arg(0)
@@ -94,21 +94,15 @@ func main() {
 
 	loadLaunchers()
 
-	// Function to load commands from a list of markdown files
-	loadCommandsFromFiles := func(mdFiles []string) {
-		for _, mdFile := range mdFiles {
-			logrus.Debug(fmt.Sprintf("Loading file %s", mdFile))
-			err := loadCommands(mdFile)
-			if err != nil {
-				errorExit("Error loading commands from %s: %v", mdFile, err)
-			}
+	mdFiles := getMarkdownFilePaths(*fileFlag)
+	for _, mdFile := range mdFiles {
+		logrus.Debug(fmt.Sprintf("Loading file %s", mdFile))
+		err := loadCommands(mdFile)
+		if err != nil {
+			errorExit("Error loading commands from %s: %v", mdFile, err)
 		}
 	}
 
-	mdFiles := getMarkdownFilePaths(*fileFlag)
-	loadCommandsFromFiles(mdFiles)
-
-	// Execute command
 	if command, ok := commands[commandName]; ok {
 		err := executeCommandBlock(&command, commandArgs...)
 		if err != nil {
