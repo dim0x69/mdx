@@ -77,7 +77,6 @@ type CodeBlock struct {
 	Lang string         // the infostring from the code fence
 	Code string         // the content of the code fence
 	Meta map[string]any // contains metadata for the code block
-
 }
 
 // CommandBlock represents a heading, which contains one to multiple code fences.
@@ -89,21 +88,38 @@ type CommandBlock struct {
 	Meta         map[string]any // placeholder for the future
 }
 
+func listCommands(commands map[string]CommandBlock) {
+	fmt.Println("Available commands:")
+	for name, command := range commands {
+		if len(command.Dependencies) > 0 {
+			fmt.Printf("%s: %s)\n", name, command.Dependencies)
+		} else {
+			fmt.Println(name)
+		}
+	}
+}
+
 func main() {
 	setLogLevel()
 	fileFlag := flag.String("file", "", "Specify a markdown file")
 	fileFlagShort := flag.String("f", "", "Specify a markdown file (shorthand)")
+	listFlag := flag.Bool("list", false, "list commands")
+	listFlagShort := flag.Bool("l", false, "list commands (shorthand)")
 	flag.Parse()
 
 	if *fileFlagShort != "" {
 		fileFlag = fileFlagShort
 	}
 
+	if *listFlagShort {
+		listFlag = listFlagShort
+	}
+
 	logrus.Debug("MDX started with parameters:", os.Args)
 
 	// Check for subcommands
-	if flag.NArg() < 1 {
-		errorExit("Usage: mdx [-file <markdown-file>] <command> [args]")
+	if flag.NArg() < 1 && !*listFlag {
+		errorExit("Usage: mdx [-file <markdown-file>] [-list] <command> [args]")
 	}
 
 	commandName := flag.Arg(0)
@@ -123,6 +139,11 @@ func main() {
 		if err != nil {
 			errorExit("Error loading commands from %s: %v", mdFile, err)
 		}
+	}
+
+	if *listFlag {
+		listCommands(commands)
+		os.Exit(0)
 	}
 
 	if command, ok := commands[commandName]; ok {
