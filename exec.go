@@ -52,7 +52,28 @@ func loadLaunchers() {
 	logrus.Debug("Added launchers: ", addedLaunchers)
 }
 
+/*
+Before executing commandBlock, this function validates that all dependencies are present in the commands map.
+*/
+func validateDependencies(commands map[string]CommandBlock, commandBlock *CommandBlock) error {
+	for _, dep := range commandBlock.Dependencies {
+		if _, ok := commands[dep]; !ok {
+			return fmt.Errorf("%w: %s", ErrDependencyNotFound, dep)
+		}
+		dependency := commands[dep]
+		if err := validateDependencies(commands, &dependency); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func executeCommandBlock(commands map[string]CommandBlock, commandBlock *CommandBlock, args ...string) error {
+
+	if err := validateDependencies(commands, commandBlock); err != nil {
+		return err
+	}
+
 	for _, dep := range commandBlock.Dependencies {
 		if _, ok := commands[dep]; !ok {
 			return fmt.Errorf("%w: %s", ErrDependencyNotFound, dep)

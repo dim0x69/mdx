@@ -291,3 +291,30 @@ func TestExecuteCodeBlock_LauncherNotDefined(t *testing.T) {
 		t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
 	}
 }
+
+func TestExecuteCodeBlock_DependencyMissing(t *testing.T) {
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+
+	args := []string{}
+	wantErr := ErrDependencyNotFound
+	commands := map[string]CommandBlock{}
+	loadCommands("tests/test_dependency_missing.md", commands)
+	commandBlock := commands["cmd1"]
+	output, err := captureOutput(func() error {
+		return executeCommandBlock(commands, &commandBlock, args...)
+	})
+
+	// This test would output Hello, if the availability of all deps is not validated before execution.
+	expectedOutput := ""
+	if output != expectedOutput {
+		t.Errorf("executeCodeBlock() output = %v, expectedOutput %v", output, expectedOutput)
+	}
+
+	if wantErr != nil {
+		if !errors.Is(err, wantErr) {
+			t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+		}
+	} else if err != nil {
+		t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+	}
+}
