@@ -17,7 +17,13 @@ With `mdx` you execute the `sh` code block:
 hello world
 ```
 
-🚀 Find more examples [in the Wiki.](https://github.com/dim0x69/mdx/wiki/Examples)
+🚀 Features:
+
+* Pass arguments into your code block. ➔ [Example](https://github.com/dim0x69/mdx/wiki/Examples#ldap-spn-find-account-by-spn)
+* Define dependencies  ➔ Example (tbd)
+* supports shebangs in code block ➔ Example (tbd)
+
+Find more examples [in the Wiki.](https://github.com/dim0x69/mdx/wiki/Examples)
 
 ## Getting started
 
