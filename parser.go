@@ -177,7 +177,7 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 				return ast.WalkStop, fmt.Errorf("%w: '%s' was already defined in '%s'", ErrDuplicateCommand, currentCommandBlock.Name, commands[currentCommandBlock.Name].Filename)
 			}
 
-			logrus.Debug(fmt.Sprintf("Found heading: '%s' with command: '%s' and dependencies: %v", string(heading.Text(source)), currentCommandBlock.Name, currentCommandBlock.Dependencies))
+			logrus.Debug(fmt.Sprintf("Found heading with command: '%s' and dependencies: %v", currentCommandBlock.Name, currentCommandBlock.Dependencies))
 			// findCodeBlocksWalker will extract the code blocks below this heading
 			// and append them to the currentCommandBlock.CodeBlocks
 
