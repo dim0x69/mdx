@@ -69,6 +69,65 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
 	}
 }
 
+func TestExecuteExecuteCommandBlock_ValidCodeBlockExecutionTwoLayersDependencies(t *testing.T) {
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	commands := make(map[string]CommandBlock)
+
+	commands["test"] = CommandBlock{
+		CodeBlocks: []CodeBlock{
+			{
+				Lang: "sh",
+				Code: `echo -n "!"`,
+				Meta: map[string]interface{}{"shebang": false},
+			},
+		},
+		Dependencies: []string{"dep1"},
+		Meta:         map[string]interface{}{},
+	}
+	commands["dep1"] = CommandBlock{
+		CodeBlocks: []CodeBlock{
+			{
+				Lang: "sh",
+				Code: `echo -n "World"`,
+				Meta: map[string]interface{}{"shebang": false},
+			},
+		},
+		Dependencies: []string{"dep2"},
+		Meta:         map[string]interface{}{},
+	}
+	commands["dep2"] = CommandBlock{
+		CodeBlocks: []CodeBlock{
+			{
+				Lang: "sh",
+				Code: `echo -n "Hello "`,
+				Meta: map[string]interface{}{"shebang": false},
+			},
+		},
+		Dependencies: []string{},
+		Meta:         map[string]interface{}{},
+	}
+	args := []string{}
+	var wantErr error = nil
+
+	commandBlock := commands["test"]
+	output, err := captureOutput(func() error {
+		return executeCommandBlock(commands, &commandBlock, args...)
+	})
+
+	expectedOutput := "Hello World!"
+	if output != expectedOutput {
+		t.Errorf("executeCodeBlock() output = %v, expectedOutput %v", output, expectedOutput)
+	}
+
+	if wantErr != nil {
+		if !errors.Is(err, wantErr) {
+			t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+		}
+	} else if err != nil {
+		t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+	}
+}
+
 func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
 	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
 	codeBlock := CodeBlock{
