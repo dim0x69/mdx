@@ -125,7 +125,7 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 
 	var currentCommandBlock CommandBlock
 
-	praseCodeBlock := func(n ast.Node) error {
+	parseCodeBlock := func(n ast.Node) error {
 
 		if block, ok := n.(*ast.FencedCodeBlock); ok {
 
@@ -189,7 +189,7 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 					break
 				}
 				if _, ok := sibling.(*ast.FencedCodeBlock); ok {
-					err = praseCodeBlock(sibling)
+					err = parseCodeBlock(sibling)
 				}
 				if err != nil {
 					return ast.WalkStop, err
