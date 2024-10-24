@@ -283,3 +283,12 @@ func TestNoCodeInCodeFence(t *testing.T) {
 	RunFileParseTest(t, test)
 
 }
+
+func TestLoadMDXConfig(t *testing.T) {
+	test := &FileParseTest{
+		filePath:     "tests/test_config.md",
+		expectedCmds: nil,
+		expectedErr:  nil,
+	}
+	RunFileParseTest(t, test)
+}
