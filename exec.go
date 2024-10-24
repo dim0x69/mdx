@@ -45,7 +45,7 @@ func loadLaunchers() {
 
 	pythonCandidates := []string{"python", "python3"}
 	if cmd := isExecutableInPath(pythonCandidates); cmd != "" {
-		launchers["python"] = LauncherBlock{cmd: cmd, extension: "py"}
+		launchers["py"] = LauncherBlock{cmd: cmd, extension: "py"}
 		addedLaunchers = append(addedLaunchers, cmd)
 	}
 
