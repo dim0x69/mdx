@@ -12,6 +12,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
+	"gopkg.in/yaml.v3"
 )
 
 type MdxHeading struct {
@@ -124,6 +125,7 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 	doc := md.Parser().Parse(reader)
 
 	var currentCommandBlock CommandBlock
+	mdx_config := make(map[string]any)
 
 	parseCodeBlock := func(n ast.Node) error {
 
@@ -164,6 +166,16 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 		return nil
 	}
 
+	parseConfigBlock := func(n ast.Node) error {
+		if block, ok := n.(*ast.FencedCodeBlock); ok {
+			code := string(block.Text(source))
+			if err := yaml.Unmarshal([]byte(code), &mdx_config); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
 	findHeadingWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if heading, ok := n.(*MdxHeading); ok && entering {
 			currentCommandBlock = CommandBlock{}
@@ -189,7 +201,12 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 					break
 				}
 				if _, ok := sibling.(*ast.FencedCodeBlock); ok {
-					err = parseCodeBlock(sibling)
+					lang := string(sibling.(*ast.FencedCodeBlock).Language(source))
+					if lang == "mdx" {
+						err = parseConfigBlock(sibling)
+					} else {
+						err = parseCodeBlock(sibling)
+					}
 				}
 				if err != nil {
 					return ast.WalkStop, err
