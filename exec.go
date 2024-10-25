@@ -88,12 +88,17 @@ func executeCommandBlock(commands map[string]CommandBlock, commandBlock *Command
 	for i, codeBlock := range commandBlock.CodeBlocks {
 		logrus.Debug(fmt.Sprintf("Executing Code Block #%d", i))
 
+		var err error
 		if i == 0 {
-			if err := executeCodeBlock(&codeBlock, args...); err != nil {
-				return err
-			}
+			err = executeCodeBlock(&codeBlock, args...)
 		} else {
-			if err := executeCodeBlock(&codeBlock); err != nil {
+			err = executeCodeBlock(&codeBlock)
+		}
+
+		if err != nil {
+			if codeBlock.Config.OnError == "ignore" {
+				logrus.Debug(fmt.Sprintf("Ignoring error in command block %s (b/c on-error = ignore): %v", commandBlock.Name, err))
+			} else {
 				return err
 			}
 		}
@@ -186,8 +191,8 @@ func executeCodeBlock(codeBlock *CodeBlock, args ...string) error {
 		if readErr != nil {
 			return fmt.Errorf("failed to execute command: %v, and failed to read temporary file: %v", err, readErr)
 		}
-		fmt.Printf("Content of tmpFile:\n%s\n", content)
-		return fmt.Errorf("failed to execute command: %v", err)
+		fmt.Fprintf(os.Stderr, "Command executed:\n%s\n", content)
+		return fmt.Errorf("%w: %v", ErrCodeBlockExecFailed, err)
 	}
 	return nil
 }

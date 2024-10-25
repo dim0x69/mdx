@@ -11,4 +11,5 @@ var (
 	ErrNoInfostringOrShebang        = errors.New("no infostring and no shebang defined")
 	ErrDuplicateCommand             = errors.New("duplicate command found")
 	ErrDependencyNotFound           = errors.New("dependency not found")
+	ErrCodeBlockExecFailed          = errors.New("failed to execute code block")
 )
