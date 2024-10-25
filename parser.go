@@ -178,7 +178,11 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 			logrus.Debug(fmt.Sprintf("Found config block: %v", mdxConfig))
 			if config, ok := mdxConfig["config"].(map[string]interface{}); ok {
 				if onError, ok := config["on-error"].(string); ok {
-					currentConfigBlock.OnError = onError
+					if onError == "ignore" || onError == "fail" {
+						currentConfigBlock.OnError = onError
+					} else {
+						logrus.Warn(fmt.Sprintf("Invalid value for onError: '%s'. Using default 'ignore'.", onError))
+					}
 				}
 			}
 			return nil
@@ -198,6 +202,7 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 			// Reset the config block. Defaults are defined here.
 			// parseConfigBlock will update the currentConfigBlock if a config block is found.
 			// parseCodeBlock will use the currentConfigBlock to update the ConfigBlock of the CodeBlock.
+
 			currentConfigBlock = ConfigBlock{OnError: "ignore"}
 
 			if _, exists := commands[currentCommandBlock.Name]; exists {

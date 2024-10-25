@@ -74,7 +74,7 @@ func getMarkdownFilePaths(fileFlag string) []string {
 }
 
 type ConfigBlock struct {
-	OnError string
+	OnError string // Valid OnError values are 'ignore' and 'fail'. Default is 'ignore'
 	SheBang bool
 }
 

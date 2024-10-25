@@ -312,3 +312,22 @@ func TestLoadMDXConfig(t *testing.T) {
 	}
 	RunFileParseTest(t, test)
 }
+
+func TestConfigUnknownOnErrorValue(t *testing.T) {
+	test := &FileParseTest{
+		filePath: "tests/test_unknown_onerror_value.md",
+		expectedCmds: map[string]CommandBlock{
+			"cmd": {
+				CodeBlocks: []CodeBlock{{
+					Lang:   "sh",
+					Code:   "echo\n",
+					Config: ConfigBlock{SheBang: false, OnError: "ignore"},
+				},
+				},
+				Dependencies: []string{},
+				Meta:         map[string]interface{}{},
+			}},
+		expectedErr: nil,
+	}
+	RunFileParseTest(t, test)
+}
