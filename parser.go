@@ -12,6 +12,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
+	"gopkg.in/yaml.v3"
 )
 
 type MdxHeading struct {
@@ -124,8 +125,9 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 	doc := md.Parser().Parse(reader)
 
 	var currentCommandBlock CommandBlock
+	var currentConfigBlock ConfigBlock
 
-	praseCodeBlock := func(n ast.Node) error {
+	parseCodeBlock := func(n ast.Node) error {
 
 		if block, ok := n.(*ast.FencedCodeBlock); ok {
 
@@ -151,17 +153,37 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 			}
 
 			codeBlock := CodeBlock{
-				Lang: lang,
-				Code: code,
-				Meta: make(map[string]any),
+				Lang:   lang,
+				Code:   code,
+				Config: ConfigBlock{},
 			}
-			codeBlock.Meta["shebang"] = code_shebang
+			codeBlock.Config.SheBang = code_shebang
+			codeBlock.Config.OnError = currentConfigBlock.OnError
 
 			currentCommandBlock.CodeBlocks = append(currentCommandBlock.CodeBlocks, codeBlock)
 			logrus.Debug(fmt.Sprintf("Wrote new code block. Infostring: '%s', Command: '%s'", lang, currentCommandBlock.Name))
 		}
 
 		return nil
+	}
+
+	parseConfigBlock := func(n ast.Node) error {
+		// Called when a FencedCodeBlock with the language 'mdx' is found.
+		if block, ok := n.(*ast.FencedCodeBlock); ok {
+			mdxConfig := make(map[string]any)
+			code := string(block.Text(source))
+			if err := yaml.Unmarshal([]byte(code), &mdxConfig); err != nil {
+				return fmt.Errorf("failed to unmarshal YAML: %w", err)
+			}
+			logrus.Debug(fmt.Sprintf("Found config block: %v", mdxConfig))
+			if config, ok := mdxConfig["config"].(map[string]interface{}); ok {
+				if onError, ok := config["on-error"].(string); ok {
+					currentConfigBlock.OnError = onError
+				}
+			}
+			return nil
+		}
+		return fmt.Errorf("node is not a FencedCodeBlock")
 	}
 
 	findHeadingWalker := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -172,6 +194,11 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 			currentCommandBlock.CodeBlocks = []CodeBlock{}
 			currentCommandBlock.Name = heading.commandName
 			currentCommandBlock.Dependencies = heading.deps
+
+			// Reset the config block. Defaults are defined here.
+			// parseConfigBlock will update the currentConfigBlock if a config block is found.
+			// parseCodeBlock will use the currentConfigBlock to update the ConfigBlock of the CodeBlock.
+			currentConfigBlock = ConfigBlock{OnError: "ignore"}
 
 			if _, exists := commands[currentCommandBlock.Name]; exists {
 				return ast.WalkStop, fmt.Errorf("%w: '%s' was already defined in '%s'", ErrDuplicateCommand, currentCommandBlock.Name, commands[currentCommandBlock.Name].Filename)
@@ -189,7 +216,12 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 					break
 				}
 				if _, ok := sibling.(*ast.FencedCodeBlock); ok {
-					err = praseCodeBlock(sibling)
+					lang := string(sibling.(*ast.FencedCodeBlock).Language(source))
+					if lang == "mdx" {
+						err = parseConfigBlock(sibling)
+					} else {
+						err = parseCodeBlock(sibling)
+					}
 				}
 				if err != nil {
 					return ast.WalkStop, err

@@ -34,14 +34,14 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
 
 		CodeBlocks: []CodeBlock{
 			{
-				Lang: "sh",
-				Code: `echo "Hello, {{.arg1}}"`,
-				Meta: map[string]interface{}{"shebang": false},
+				Lang:   "sh",
+				Code:   `echo "Hello, {{.arg1}}"`,
+				Config: ConfigBlock{SheBang: false},
 			},
 			{
-				Lang: "sh",
-				Code: `echo -n "Hello"`,
-				Meta: map[string]interface{}{"shebang": false},
+				Lang:   "sh",
+				Code:   `echo -n "Hello"`,
+				Config: ConfigBlock{SheBang: false},
 			},
 		},
 		Dependencies: []string{},
@@ -76,9 +76,9 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecutionTwoLayersDependencies
 	commands["test"] = CommandBlock{
 		CodeBlocks: []CodeBlock{
 			{
-				Lang: "sh",
-				Code: `echo -n "!"`,
-				Meta: map[string]interface{}{"shebang": false},
+				Lang:   "sh",
+				Code:   `echo -n "!"`,
+				Config: ConfigBlock{SheBang: false},
 			},
 		},
 		Dependencies: []string{"dep1"},
@@ -87,9 +87,9 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecutionTwoLayersDependencies
 	commands["dep1"] = CommandBlock{
 		CodeBlocks: []CodeBlock{
 			{
-				Lang: "sh",
-				Code: `echo -n "World"`,
-				Meta: map[string]interface{}{"shebang": false},
+				Lang:   "sh",
+				Code:   `echo -n "World"`,
+				Config: ConfigBlock{SheBang: false},
 			},
 		},
 		Dependencies: []string{"dep2"},
@@ -98,9 +98,9 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecutionTwoLayersDependencies
 	commands["dep2"] = CommandBlock{
 		CodeBlocks: []CodeBlock{
 			{
-				Lang: "sh",
-				Code: `echo -n "Hello "`,
-				Meta: map[string]interface{}{"shebang": false},
+				Lang:   "sh",
+				Code:   `echo -n "Hello "`,
+				Config: ConfigBlock{SheBang: false},
 			},
 		},
 		Dependencies: []string{},
@@ -131,9 +131,9 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecutionTwoLayersDependencies
 func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
 	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
 	codeBlock := CodeBlock{
-		Lang: "sh",
-		Code: `echo "Hello, {{.arg1}}"`,
-		Meta: map[string]interface{}{"shebang": false},
+		Lang:   "sh",
+		Code:   `echo "Hello, {{.arg1}}"`,
+		Config: ConfigBlock{SheBang: false},
 	}
 	args := []string{"World"}
 	var wantErr error = nil
@@ -159,9 +159,9 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
 func TestExecuteCodeBlock_ValidCodeBlockExecution_CWD(t *testing.T) {
 	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
 	codeBlock := CodeBlock{
-		Lang: "sh",
-		Code: `echo "Hello, {{.arg1}}" > file.txt && cat ${PWD}/file.txt && rm file.txt`,
-		Meta: map[string]interface{}{"shebang": false},
+		Lang:   "sh",
+		Code:   `echo "Hello, {{.arg1}}" > file.txt && cat ${PWD}/file.txt && rm file.txt`,
+		Config: ConfigBlock{SheBang: false},
 	}
 	args := []string{"World"}
 	var wantErr error = nil
@@ -187,9 +187,9 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution_CWD(t *testing.T) {
 func TestExecuteCodeBlock_ValidCodeBlockExecution_SheBang(t *testing.T) {
 	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
 	codeBlock := CodeBlock{
-		Lang: "sh",
-		Code: "#!/bin/sh" + "\n" + `echo "Hello, {{.arg1}}"`,
-		Meta: map[string]interface{}{"shebang": true},
+		Lang:   "sh",
+		Code:   "#!/bin/sh" + "\n" + `echo "Hello, {{.arg1}}"`,
+		Config: ConfigBlock{SheBang: true},
 	}
 	args := []string{"World"}
 	var wantErr error = nil
@@ -214,9 +214,9 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution_SheBang(t *testing.T) {
 
 func TestExecuteCodeBlock_MissingArgument(t *testing.T) {
 	codeBlock := CodeBlock{
-		Lang: "sh",
-		Code: `echo "Hello, {{.arg1}}"`,
-		Meta: map[string]interface{}{"shebang": false},
+		Lang:   "sh",
+		Code:   `echo "Hello, {{.arg1}}"`,
+		Config: ConfigBlock{SheBang: false},
 	}
 	args := []string{}
 	wantErr := ErrArgUsedInTemplateNotProvided
@@ -234,9 +234,9 @@ func TestExecuteCodeBlock_MissingArgument(t *testing.T) {
 
 func TestExecuteCodeBlock_UnusedArgument(t *testing.T) {
 	codeBlock := CodeBlock{
-		Lang: "sh",
-		Code: `echo "Hello, {{.arg1}}"`,
-		Meta: map[string]interface{}{"shebang": false},
+		Lang:   "sh",
+		Code:   `echo "Hello, {{.arg1}}"`,
+		Config: ConfigBlock{SheBang: false},
 	}
 	args := []string{"World", "Extra"}
 	wantErr := ErrArgProvidedButNotUsed
@@ -254,9 +254,9 @@ func TestExecuteCodeBlock_UnusedArgument(t *testing.T) {
 
 func TestExecuteCodeBlock_TemplateParsingError(t *testing.T) {
 	codeBlock := CodeBlock{
-		Lang: "sh",
-		Code: `echo "Hello, {{.arg1"`, // Missing closing braces
-		Meta: map[string]interface{}{"shebang": false},
+		Lang:   "sh",
+		Code:   `echo "Hello, {{.arg1"`, // Missing closing braces
+		Config: ConfigBlock{SheBang: false},
 	}
 	args := []string{"World"}
 	wantErr := ErrArgProvidedButNotUsed
@@ -274,9 +274,9 @@ func TestExecuteCodeBlock_TemplateParsingError(t *testing.T) {
 
 func TestExecuteCodeBlock_LauncherNotDefined(t *testing.T) {
 	codeBlock := CodeBlock{
-		Lang: "unknown",
-		Code: `echo "Hello, {{.arg1}}"`,
-		Meta: map[string]interface{}{"shebang": false},
+		Lang:   "unknown",
+		Code:   `echo "Hello, {{.arg1}}"`,
+		Config: ConfigBlock{SheBang: false},
 	}
 	args := []string{"World"}
 	wantErr := ErrNoLauncherDefined

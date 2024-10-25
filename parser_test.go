@@ -105,8 +105,8 @@ func RunFileParseTest(t *testing.T, tt *FileParseTest) {
 					t.Fatalf("expected code %s, got %s", expectedCodeBlock.Code, actualCodeBlock.Code)
 				}
 
-				if !reflect.DeepEqual(actualCodeBlock.Meta, expectedCodeBlock.Meta) {
-					t.Fatalf("expected meta %v, got %v", expectedCodeBlock.Meta, actualCodeBlock.Meta)
+				if !reflect.DeepEqual(actualCodeBlock.Config, expectedCodeBlock.Config) {
+					t.Fatalf("expected config %v, got %v", expectedCodeBlock.Config, actualCodeBlock.Config)
 				}
 			}
 
@@ -127,9 +127,9 @@ func TestOneCommandWithDeps(t *testing.T) {
 		expectedCmds: map[string]CommandBlock{
 			"simple_echo": {
 				CodeBlocks: []CodeBlock{{
-					Lang: "sh",
-					Code: "echo \"{{.arg1}} {{.arg2}}\"",
-					Meta: map[string]interface{}{"shebang": false},
+					Lang:   "sh",
+					Code:   "echo \"{{.arg1}} {{.arg2}}\"",
+					Config: ConfigBlock{SheBang: false, OnError: "ignore"},
 				}},
 				Dependencies: []string{"dep1", "dep2"},
 				Meta:         map[string]interface{}{},
@@ -146,18 +146,18 @@ func TestTwoCommands(t *testing.T) {
 		expectedCmds: map[string]CommandBlock{
 			"simple_echo1": {
 				CodeBlocks: []CodeBlock{{
-					Lang: "sh",
-					Code: "code1",
-					Meta: map[string]interface{}{"shebang": false},
+					Lang:   "sh",
+					Code:   "code1",
+					Config: ConfigBlock{SheBang: false, OnError: "ignore"},
 				}},
 				Dependencies: []string{"dep1"},
 				Meta:         map[string]interface{}{},
 			},
 			"simple_echo2": {
 				CodeBlocks: []CodeBlock{{
-					Lang: "sh",
-					Code: "code2",
-					Meta: map[string]interface{}{"shebang": false},
+					Lang:   "sh",
+					Code:   "code2",
+					Config: ConfigBlock{SheBang: false, OnError: "ignore"},
 				}},
 				Dependencies: []string{"dep1", "dep2"},
 				Meta:         map[string]interface{}{},
@@ -175,14 +175,14 @@ func TestOneCommandTwoCodeBlocks(t *testing.T) {
 			"simple_echo1": {
 				CodeBlocks: []CodeBlock{
 					{
-						Lang: "sh",
-						Code: "code1",
-						Meta: map[string]interface{}{"shebang": false},
+						Lang:   "sh",
+						Code:   "code1",
+						Config: ConfigBlock{SheBang: false, OnError: "ignore"},
 					},
 					{
-						Lang: "python",
-						Code: "#!/bin/venv/python\ncode2",
-						Meta: map[string]interface{}{"shebang": true},
+						Lang:   "python",
+						Code:   "#!/bin/venv/python\ncode2",
+						Config: ConfigBlock{SheBang: true, OnError: "ignore"},
 					},
 				},
 				Dependencies: []string{"dep1"},
@@ -201,14 +201,14 @@ func TestTwoCommandsTwoCodeBlocks(t *testing.T) {
 			"simple_echo1": {
 				CodeBlocks: []CodeBlock{
 					{
-						Lang: "sh",
-						Code: "code1",
-						Meta: map[string]interface{}{"shebang": false},
+						Lang:   "sh",
+						Code:   "code1",
+						Config: ConfigBlock{SheBang: false, OnError: "ignore"},
 					},
 					{
-						Lang: "python",
-						Code: "#!/bin/venv/python\ncode2",
-						Meta: map[string]interface{}{"shebang": true},
+						Lang:   "python",
+						Code:   "#!/bin/venv/python\ncode2",
+						Config: ConfigBlock{SheBang: true, OnError: "ignore"},
 					},
 				},
 				Dependencies: []string{"dep1"},
@@ -217,14 +217,14 @@ func TestTwoCommandsTwoCodeBlocks(t *testing.T) {
 			"simple_echo2": {
 				CodeBlocks: []CodeBlock{
 					{
-						Lang: "sh",
-						Code: "code1",
-						Meta: map[string]interface{}{"shebang": false},
+						Lang:   "sh",
+						Code:   "code1",
+						Config: ConfigBlock{SheBang: false, OnError: "ignore"},
 					},
 					{
-						Lang: "python",
-						Code: "#!/bin/venv/python\ncode2",
-						Meta: map[string]interface{}{"shebang": true},
+						Lang:   "python",
+						Code:   "#!/bin/venv/python\ncode2",
+						Config: ConfigBlock{SheBang: true, OnError: "ignore"},
 					},
 				},
 				Dependencies: []string{},
@@ -242,9 +242,9 @@ func TestParseShebang(t *testing.T) {
 		expectedCmds: map[string]CommandBlock{
 			"simple_echo": {
 				CodeBlocks: []CodeBlock{{
-					Lang: "",
-					Code: "#!/my/python\nprint(blubb)",
-					Meta: map[string]interface{}{"shebang": true},
+					Lang:   "",
+					Code:   "#!/my/python\nprint(blubb)",
+					Config: ConfigBlock{SheBang: true, OnError: "ignore"},
 				}},
 				Dependencies: []string{},
 				Meta:         map[string]interface{}{},
@@ -282,4 +282,33 @@ func TestNoCodeInCodeFence(t *testing.T) {
 	}
 	RunFileParseTest(t, test)
 
+}
+
+func TestLoadMDXConfig(t *testing.T) {
+	test := &FileParseTest{
+		filePath: "tests/test_config.md",
+		expectedCmds: map[string]CommandBlock{
+			"cmd": {
+				CodeBlocks: []CodeBlock{{
+					Lang:   "sh",
+					Code:   "echo\n",
+					Config: ConfigBlock{SheBang: false, OnError: "fail"},
+				},
+					{
+						Lang:   "py",
+						Code:   "echo\n",
+						Config: ConfigBlock{SheBang: false, OnError: "fail"},
+					},
+					{
+						Lang:   "sh",
+						Code:   "echo2\n",
+						Config: ConfigBlock{SheBang: false, OnError: "ignore"},
+					},
+				},
+				Dependencies: []string{},
+				Meta:         map[string]interface{}{},
+			}},
+		expectedErr: nil,
+	}
+	RunFileParseTest(t, test)
 }

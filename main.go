@@ -73,10 +73,16 @@ func getMarkdownFilePaths(fileFlag string) []string {
 	return mdFiles
 }
 
+type ConfigBlock struct {
+	OnError string
+	SheBang bool
+}
+
 type CodeBlock struct {
-	Lang string         // the infostring from the code fence
-	Code string         // the content of the code fence
-	Meta map[string]any // contains metadata for the code block
+	Lang   string      // the infostring from the code fence
+	Code   string      // the content of the code fence
+	Config ConfigBlock // contains metadata for the code block
+
 }
 
 // CommandBlock represents a heading, which contains one to multiple code fences.

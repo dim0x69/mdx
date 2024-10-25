@@ -161,7 +161,7 @@ func executeCodeBlock(codeBlock *CodeBlock, args ...string) error {
 
 	defer os.Remove(tmpFile.Name())
 
-	if !codeBlock.Meta["shebang"].(bool) {
+	if !codeBlock.Config.SheBang {
 		if _, err := tmpFile.Write([]byte(fmt.Sprintf("#!/usr/bin/env %s\n", launcher.cmd))); err != nil {
 			return fmt.Errorf("failed to write to temporary file: %v", err)
 		}
