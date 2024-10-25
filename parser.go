@@ -102,13 +102,10 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 		The search strategy is as follows. We start at the beginning of the document, parse the Markdown file into an AST and walk the tree:
 
 		1 We search for a heading. (findHeadingWalker)
-		2 If we find a heading, we walk all siblings of the heading and call praseCodeBlock for all FencedCodeBlock nodes.
+		2 If we find a heading, we walk all siblings of the heading and call parseCodeBlock for all FencedCodeBlock nodes and parseConfigBlock for all FencedCodeBlock nodes with the language 'mdx'.
 		  praseCodeBlock extacts the code from the code block, updates the currentCommandBlock and appends the code block to the currentCommandBlock.CodeBlocks.
 		3 Goto 1.
 	*/
-
-	// TODO: load all commands
-
 	source, err := os.ReadFile(markdownFile)
 	if err != nil {
 		return err
@@ -202,7 +199,6 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 			// Reset the config block. Defaults are defined here.
 			// parseConfigBlock will update the currentConfigBlock if a config block is found.
 			// parseCodeBlock will use the currentConfigBlock to update the ConfigBlock of the CodeBlock.
-
 			currentConfigBlock = ConfigBlock{OnError: "ignore"}
 
 			if _, exists := commands[currentCommandBlock.Name]; exists {

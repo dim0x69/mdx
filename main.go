@@ -73,6 +73,7 @@ func getMarkdownFilePaths(fileFlag string) []string {
 	return mdFiles
 }
 
+// Defaults for ConfigBlock are set in findHeadingWalker
 type ConfigBlock struct {
 	OnError string // Valid OnError values are 'ignore' and 'fail'. Default is 'ignore'
 	SheBang bool
