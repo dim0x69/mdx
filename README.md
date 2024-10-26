@@ -21,7 +21,7 @@ hello world
 
 * Pass arguments into your code block. ➔ [Example](https://github.com/dim0x69/mdx/wiki/Examples#ldap-spn-find-account-by-spn)
 * Define dependencies  ➔ [Example](https://github.com/dim0x69/mdx/wiki/Examples#docker)
-* supports shebangs in code block ➔ Example (tbd)
+* supports shebangs in code block ➔ [Example](https://github.com/dim0x69/mdx/wiki/Examples#venv-shebang-shebang-support)
 
 Find more examples [in the Wiki.](https://github.com/dim0x69/mdx/wiki/Examples)
 
