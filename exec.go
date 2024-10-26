@@ -150,8 +150,8 @@ func executeCodeBlock(codeBlock *CodeBlock, args ...string) error {
 	}
 
 	launcher, ok := launchers[codeBlock.Lang]
-	if !ok {
-		return fmt.Errorf("%w: %s", ErrNoLauncherDefined, codeBlock.Lang)
+	if !ok && !codeBlock.Config.SheBang {
+		return fmt.Errorf("%w: %s", ErrNoInfostringOrShebang, codeBlock.Lang)
 	}
 
 	// Write the rendered code to the temporary file
