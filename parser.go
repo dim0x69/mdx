@@ -145,6 +145,13 @@ func loadCommands(markdownFile string, commands map[string]CommandBlock) error {
 				return nil
 			}
 
+			if lang != "" && !code_shebang {
+				logrus.Debug(fmt.Sprintf("No language defined for command '%s' in '%s'. Using shebang!", currentCommandBlock.Name, markdownFile))
+				if _, ok := launchers[lang]; !ok {
+					return fmt.Errorf("%w: %s", ErrNoLauncherDefined, lang)
+				}
+			}
+
 			if lang != "" && code_shebang {
 				logrus.Warn(fmt.Sprintf("Both language and shebang defined for command '%s' in '%s'. The shebang will be used!", currentCommandBlock.Name, markdownFile))
 			}

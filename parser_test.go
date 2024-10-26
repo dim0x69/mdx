@@ -255,6 +255,25 @@ func TestParseShebang(t *testing.T) {
 	RunFileParseTest(t, test)
 }
 
+func TestNoLauncherDefined(t *testing.T) {
+	test := &FileParseTest{
+		filePath: "tests/test_no_launcher_defined.md",
+		expectedCmds: map[string]CommandBlock{
+			"cmd": {
+				CodeBlocks: []CodeBlock{{
+					Lang:   "na",
+					Code:   "command",
+					Config: ConfigBlock{SheBang: false, OnError: "ignore"},
+				}},
+				Dependencies: []string{},
+				Meta:         map[string]interface{}{},
+			},
+		},
+		expectedErr: ErrNoLauncherDefined,
+	}
+	RunFileParseTest(t, test)
+}
+
 func TestTwoCommandHaveSameName(t *testing.T) {
 	test := &FileParseTest{
 		filePath:     "tests/err_same_command_name.md",
