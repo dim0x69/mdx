@@ -27,8 +27,6 @@ hello world
 * parses all .md files in the CWD for potential commands
   * list all commands using `-list` or `-l`
 
-Find more examples [in the Wiki.](https://github.com/dim0x69/mdx/wiki/Examples)
-
 ➔ [Usage](https://github.com/dim0x69/mdx/wiki/Usage)
 
 ## Getting started
