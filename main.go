@@ -99,9 +99,9 @@ func listCommands(commands map[string]CommandBlock) {
 	fmt.Println("Available commands:")
 	for name, command := range commands {
 		if len(command.Dependencies) > 0 {
-			fmt.Printf("%s: %s)\n", name, command.Dependencies)
+			fmt.Printf("%s: %s (%s)\n", name, command.Dependencies, command.Filename)
 		} else {
-			fmt.Println(name)
+			fmt.Printf("%s (%s)\n", name, command.Filename)
 		}
 	}
 }
