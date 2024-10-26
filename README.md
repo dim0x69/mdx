@@ -25,6 +25,8 @@ hello world
 
 Find more examples [in the Wiki.](https://github.com/dim0x69/mdx/wiki/Examples)
 
+➔ [Usage](https://github.com/dim0x69/mdx/wiki/Usage)
+
 ## Getting started
 
 ### Installation
