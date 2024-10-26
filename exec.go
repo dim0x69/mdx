@@ -13,8 +13,8 @@ import (
 
 func isExecutableInPath(candidates []string) string {
 	for _, cmd := range candidates {
-		if _, err := exec.LookPath(cmd); err == nil {
-			return cmd
+		if path, err := exec.LookPath(cmd); err == nil {
+			return path
 		}
 	}
 	return ""
@@ -29,9 +29,15 @@ type LauncherBlock struct {
 // the key is the infostring from the code fence
 var launchers = map[string]LauncherBlock{}
 
-func loadLaunchers() {
+func loadLaunchers() error {
 	addedLaunchers := []string{}
 
+	if env := isExecutableInPath([]string{"env"}); env != "" {
+		launchers["env"] = LauncherBlock{cmd: env, extension: "env"}
+		addedLaunchers = append(addedLaunchers, env)
+	} else {
+		return fmt.Errorf("%w: env must be available in PATH", ErrNoEnv)
+	}
 	if cmd := isExecutableInPath([]string{"sh"}); cmd != "" {
 		launchers["sh"] = LauncherBlock{cmd: cmd, extension: "sh"}
 		launchers["bash"] = LauncherBlock{cmd: cmd, extension: "sh"}
@@ -50,6 +56,14 @@ func loadLaunchers() {
 	}
 
 	logrus.Debug("Added launchers: ", addedLaunchers)
+	return nil
+}
+
+func listLaunchers() {
+	fmt.Println("Available launchers:")
+	for lang, launcher := range launchers {
+		fmt.Printf("%s: %s (extension: %s)\n", lang, launcher.cmd, launcher.extension)
+	}
 }
 
 /*
@@ -167,7 +181,8 @@ func executeCodeBlock(codeBlock *CodeBlock, args ...string) error {
 	defer os.Remove(tmpFile.Name())
 
 	if !codeBlock.Config.SheBang {
-		if _, err := tmpFile.Write([]byte(fmt.Sprintf("#!/usr/bin/env %s\n", launcher.cmd))); err != nil {
+		env := launchers["env"]
+		if _, err := tmpFile.Write([]byte(fmt.Sprintf("#!%s %s\n", env.cmd, launcher.cmd))); err != nil {
 			return fmt.Errorf("failed to write to temporary file: %v", err)
 		}
 
@@ -191,7 +206,7 @@ func executeCodeBlock(codeBlock *CodeBlock, args ...string) error {
 		if readErr != nil {
 			return fmt.Errorf("failed to execute command: %v, and failed to read temporary file: %v", err, readErr)
 		}
-		fmt.Fprintf(os.Stderr, "Command executed:\n%s\n", content)
+		fmt.Fprintf(os.Stderr, "Error executing Code Block:\n%s\n", content)
 		return fmt.Errorf("%w: %v", ErrCodeBlockExecFailed, err)
 	}
 	return nil

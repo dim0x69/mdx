@@ -12,4 +12,5 @@ var (
 	ErrDuplicateCommand             = errors.New("duplicate command found")
 	ErrDependencyNotFound           = errors.New("dependency not found")
 	ErrCodeBlockExecFailed          = errors.New("failed to execute code block")
+	ErrNoEnv                        = errors.New("env binary not found")
 )

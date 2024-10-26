@@ -112,6 +112,8 @@ func main() {
 	fileFlagShort := flag.String("f", "", "Specify a markdown file (shorthand)")
 	listFlag := flag.Bool("list", false, "list commands")
 	listFlagShort := flag.Bool("l", false, "list commands (shorthand)")
+	listLaunchersFlag := flag.Bool("list-launchers", false, "list commands")
+	listLaunchersFlagShort := flag.Bool("ll", false, "list commands (shorthand)")
 	flag.Parse()
 
 	if *fileFlagShort != "" {
@@ -122,10 +124,14 @@ func main() {
 		listFlag = listFlagShort
 	}
 
+	if *listLaunchersFlagShort {
+		listLaunchersFlag = listLaunchersFlagShort
+	}
+
 	logrus.Debug("MDX started with parameters:", os.Args)
 
 	// Check for subcommands
-	if flag.NArg() < 1 && !*listFlag {
+	if flag.NArg() < 1 && !*listFlag && !*listLaunchersFlag {
 		errorExit("Usage: mdx [-file <markdown-file>] [-list] <command> [args]")
 	}
 
@@ -135,7 +141,14 @@ func main() {
 		commandArgs = flag.Args()[1:]
 	}
 
-	loadLaunchers()
+	if error := loadLaunchers(); error != nil {
+		errorExit("Error loading launchers: %v", error)
+	}
+
+	if *listLaunchersFlag {
+		listLaunchers()
+		os.Exit(0)
+	}
 
 	var commands = map[string]CommandBlock{}
 
