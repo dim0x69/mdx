@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -374,5 +375,29 @@ func TestExecuteCodeBlock_ConfigIgnoreError(t *testing.T) {
 		}
 	} else if err != nil {
 		t.Errorf("executeCodeBlock() error = %v, wantErr %v", err, wantErr)
+	}
+}
+
+func TestLoadLaunchers(t *testing.T) {
+	err := loadLaunchers()
+	for _, launcher := range launchers {
+		if !strings.HasPrefix(launcher.cmd, "/") {
+			t.Errorf("launcher.Cmd = %v, expected to start with '/'", launcher.cmd)
+		}
+	}
+
+	if _, ok := launchers["sh"]; !ok {
+		t.Errorf("Expected launcher for 'sh' to be defined")
+	}
+
+	if _, ok := launchers["py"]; !ok {
+		t.Errorf("Expected launcher for 'py' to be defined")
+	}
+	if _, ok := launchers["env"]; !ok {
+		t.Errorf("Expected launcher for 'env' to be defined")
+	}
+
+	if err != nil {
+		t.Errorf("loadLaunchers() error = %v, wantErr %v", err, nil)
 	}
 }
