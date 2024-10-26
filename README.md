@@ -17,11 +17,15 @@ With `mdx` you execute the `sh` code block:
 hello world
 ```
 
-🚀 Features:
+🚀 In a nutshell:
 
 * Pass arguments into your code block. ➔ [Example](https://github.com/dim0x69/mdx/wiki/Examples#ldap-spn-find-account-by-spn)
 * Define dependencies  ➔ [Example](https://github.com/dim0x69/mdx/wiki/Examples#docker)
 * supports shebangs in code block ➔ [Example](https://github.com/dim0x69/mdx/wiki/Examples#venv-shebang-shebang-support)
+
+
+* parses all .md files in the CWD for potential commands
+  * list all commands using `-list` or `-l`
 
 Find more examples [in the Wiki.](https://github.com/dim0x69/mdx/wiki/Examples)
 
