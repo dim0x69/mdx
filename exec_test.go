@@ -32,7 +32,7 @@ func captureOutput(f func() error, captureStderr bool) (string, error) {
 }
 
 func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
-	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}, "env": {"/usr/bin/env", "env"}}
 	commands := make(map[string]CommandBlock)
 
 	commands["test"] = CommandBlock{
@@ -75,7 +75,7 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecution(t *testing.T) {
 }
 
 func TestExecuteExecuteCommandBlock_ValidCodeBlockExecutionTwoLayersDependencies(t *testing.T) {
-	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}, "env": {"/usr/bin/env", "env"}}
 	commands := make(map[string]CommandBlock)
 
 	commands["test"] = CommandBlock{
@@ -134,7 +134,7 @@ func TestExecuteExecuteCommandBlock_ValidCodeBlockExecutionTwoLayersDependencies
 }
 
 func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
-	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}, "env": {"/usr/bin/env", "env"}}
 	codeBlock := CodeBlock{
 		Lang:   "sh",
 		Code:   `echo "Hello, {{.arg1}}"`,
@@ -162,7 +162,7 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution(t *testing.T) {
 }
 
 func TestExecuteCodeBlock_ValidCodeBlockExecution_CWD(t *testing.T) {
-	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}, "env": {"/usr/bin/env", "env"}}
 	codeBlock := CodeBlock{
 		Lang:   "sh",
 		Code:   `echo "Hello, {{.arg1}}" > file.txt && cat ${PWD}/file.txt && rm file.txt`,
@@ -190,7 +190,7 @@ func TestExecuteCodeBlock_ValidCodeBlockExecution_CWD(t *testing.T) {
 }
 
 func TestExecuteCodeBlock_ValidCodeBlockExecution_SheBang(t *testing.T) {
-	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}, "env": {"/usr/bin/env", "env"}}
 	codeBlock := CodeBlock{
 		Lang:   "sh",
 		Code:   "#!/bin/sh" + "\n" + `echo "Hello, {{.arg1}}"`,
@@ -284,7 +284,7 @@ func TestExecuteCodeBlock_LauncherNotDefined(t *testing.T) {
 		Config: ConfigBlock{SheBang: false},
 	}
 	args := []string{"World"}
-	wantErr := ErrNoLauncherDefined
+	wantErr := ErrNoInfostringOrShebang
 
 	err := executeCodeBlock(&codeBlock, args...)
 
@@ -298,7 +298,7 @@ func TestExecuteCodeBlock_LauncherNotDefined(t *testing.T) {
 }
 
 func TestExecuteCodeBlock_DependencyMissing(t *testing.T) {
-	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}, "env": {"/usr/bin/env", "env"}}
 
 	args := []string{}
 	wantErr := ErrDependencyNotFound
@@ -325,7 +325,7 @@ func TestExecuteCodeBlock_DependencyMissing(t *testing.T) {
 }
 
 func TestExecuteCodeBlock_ConfigFailExecution(t *testing.T) {
-	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}, "env": {"/usr/bin/env", "env"}}
 
 	args := []string{}
 	var wantErr error = ErrCodeBlockExecFailed
@@ -352,7 +352,7 @@ func TestExecuteCodeBlock_ConfigFailExecution(t *testing.T) {
 }
 
 func TestExecuteCodeBlock_ConfigIgnoreError(t *testing.T) {
-	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}}
+	launchers = map[string]LauncherBlock{"sh": {"sh", "sh"}, "bash": {"sh", "sh"}, "env": {"/usr/bin/env", "env"}}
 
 	args := []string{}
 	var wantErr error = nil
